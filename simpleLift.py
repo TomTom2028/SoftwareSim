@@ -1,4 +1,5 @@
 # simple shit: one floor that spawns items. the lift takes the tray down, and takes one of the tray
+import random
 from enum import Enum
 import salabim as sim
 class BayStatus(Enum):
@@ -35,14 +36,6 @@ class Person(sim.Component):
     def schedule_notification(self, notification):
         notification.enter(self.notification_queue)
 
-
-class OrderGenerator(sim.Component):
-    def process(self):
-        while True:
-            Order(sim.Uniform(0, 10).sample())
-            self.hold(sim.Uniform(20, 100).sample())
-
-
 class PickerNotification(sim.Component):
     def __init__(self, lift):
         super().__init__()
@@ -50,12 +43,28 @@ class PickerNotification(sim.Component):
     def process(self):
         self.passivate()
 
+
+
+class OrderGenerator(sim.Component):
+    def __init__(self, lifts):
+        super().__init__()
+        self.lifts = lifts
+    def process(self):
+        while True:
+            # take a random lift
+            random_lift = random.choice(self.lifts)
+            order = Order(sim.Uniform(0, 10).sample())
+            random_lift.schedule(order)
+            self.hold(sim.Uniform(10, 50).sample())
+
+
+
+
 class Order(sim.Component):
     def __init__(self, floor_number):
         super().__init__()
         self.floor_number = floor_number
     def process(self):
-        self.enter(orderQueue)
         self.passivate()
 
 
@@ -72,12 +81,13 @@ class Lift(sim.Component):
         self.location = location
 
         self.bay_status = sim.State(f'{lift_name}_bay', value=BayStatus.IDLE)
+        self.order_queue = sim.Queue(f'{lift_name}_orderQueue')
 
     def process(self):
         while True:
-            while len(orderQueue) == 0:
+            while len(self.order_queue) == 0:
                 self.standby()
-            current_order = orderQueue.pop()
+            current_order = self.order_queue.pop()
             hold_time = get_time(self.current_floor_number, current_order.floor_number, self.speed)
             self.hold(hold_time)
             self.current_floor_number = current_order.floor_number
@@ -90,17 +100,23 @@ class Lift(sim.Component):
             self.picker.schedule_notification(PickerNotification(self))
 
             self.wait((self.bay_status, BayStatus.IDLE))
+    def schedule(self, order):
+        self.order_queue.add(order)
 
 
 
 
 env = sim.Environment(trace=True)
-orderQueue = sim.Queue('orderQueue')
 person = Person("Person1")
-Lift(0, 1, 10, person, 0, "LiftOne")
-OrderGenerator()
+liftOne = Lift(0, 1, 10, person, 0, "LiftOne")
+liftTwo = Lift(0, 1, 10, person, 10, "LiftTwo")
+OrderGenerator([liftOne, liftTwo])
 
 env.run(till=5000)
-orderQueue.length.print_histogram(30, 0, 1)
+liftOne.order_queue.length.print_histogram(30, 0, 1)
 print()
-orderQueue.length_of_stay.print_histogram(30, 0, 10)
+liftOne.order_queue.length_of_stay.print_histogram(30, 0, 10)
+print('\n')
+liftTwo.order_queue.length.print_histogram(30, 0, 1)
+print()
+liftTwo.order_queue.length_of_stay.print_histogram(30, 0, 10)
