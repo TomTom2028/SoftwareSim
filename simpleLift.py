@@ -2,6 +2,10 @@
 import random
 from enum import Enum
 import salabim as sim
+
+from towerGenerator import TowerGenerator
+
+
 class BayStatus(Enum):
     IDLE = "IDLE"
     READY = "READY"
@@ -9,7 +13,6 @@ class BayStatus(Enum):
 
 def get_time(a, b, speed):
     return abs(a - b)/speed
-
 
 class Person(sim.Component):
     def __init__(self, person_name):
@@ -70,7 +73,9 @@ class Order(sim.Component):
 
 #vlm takes order out of the queue
 class Vlm(sim.Component):
-    def __init__(self, target_floor_number, speed, loading_time, picker, location, vlm_name):
+
+
+    def __init__(self, target_floor_number, speed, loading_time, picker, location, initial_tower, vlm_name):
         super().__init__()
         self.target_floor_number = target_floor_number
         self.current_floor_number = target_floor_number
@@ -82,6 +87,9 @@ class Vlm(sim.Component):
 
         self.bay_status = sim.State(f'{vlm_name}_bay', value=BayStatus.IDLE)
         self.order_queue = sim.Queue(f'{vlm_name}_orderQueue')
+
+        # the tower is a 2d array. first dimention is the floor number, second dimention is the trays
+        self.tower = initial_tower
 
     def process(self):
         while True:
@@ -104,11 +112,24 @@ class Vlm(sim.Component):
         self.order_queue.add(order)
 
 
+
 env = sim.Environment(trace=True)
 person = Person("Person1")
-vlmOne = Vlm(0, 1, 10, person, 0, "VlmOne")
-vlmTwo = Vlm(0, 1, 10, person, 10, "VlmTwo")
+vlmOne = Vlm(0, 1, 10, person, 0, [[]], "VlmOne")
+vlmTwo = Vlm(0, 1, 10, person, 10, [[]], "VlmTwo")
 OrderGenerator([vlmOne, vlmTwo])
+
+
+
+
+towerGenerator = TowerGenerator()
+towerOne = towerGenerator.get_tower(10, 2, 20)
+# print tower
+for level in towerOne:
+    for tray in level:
+        content = tray.content
+        print(content)
+"""
 
 env.run(till=5000)
 vlmOne.order_queue.length.print_histogram(30, 0, 1)
@@ -118,3 +139,4 @@ print('\n')
 vlmTwo.order_queue.length.print_histogram(30, 0, 1)
 print()
 vlmTwo.order_queue.length_of_stay.print_histogram(30, 0, 10)
+"""
