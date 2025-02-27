@@ -3,7 +3,7 @@ import random
 from enum import Enum
 import salabim as sim
 
-from towerGenerator import TowerGenerator
+from tower.TowerGenerator import TowerGenerator
 
 
 class BayStatus(Enum):
@@ -49,9 +49,39 @@ class PickerNotification(sim.Component):
 
 
 class OrderGenerator(sim.Component):
-    def __init__(self, vlms):
+    def __init__(self, vlms, avg_amount_of_items):
         super().__init__()
         self.vlms = vlms
+        self.avg_amount_of_items = avg_amount_of_items
+
+
+    def assemble_random_order(self):
+        item_count_dicts = [vlm.get_items_count() for vlm in self.vlms]
+        item_dict = {}
+        for item_count_dict in item_count_dicts:
+            for item in item_count_dict:
+                if item in item_dict:
+                    item_dict[item] += item_count_dict[item]
+                else:
+                    item_dict[item] = item_count_dict[item]
+        order_items = {}
+        amount_of_items = sim.Poisson(self.avg_amount_of_items).sample()
+        total_amount_items_left = 0
+        for item in item_dict:
+            total_amount_items_left += item_dict[item]
+
+        while amount_of_items > 0 and total_amount_items_left > 0:
+            item = random.choice(list(item_dict.keys()))
+            amount = random.randint(1, total_amount_items_left)
+            if item in order_items:
+                order_items[item] += amount
+            else:
+                order_items[item] = amount
+            amount_of_items -= amount
+            total_amount_items_left -= amount
+        return Order(order_items)
+
+
     def process(self):
         while True:
             # take a random vlm
@@ -64,9 +94,9 @@ class OrderGenerator(sim.Component):
 
 
 class Order(sim.Component):
-    def __init__(self, floor_number):
+    def __init__(self, items):
         super().__init__()
-        self.floor_number = floor_number
+        self.items = items
     def process(self):
         self.passivate()
 
@@ -75,7 +105,7 @@ class Order(sim.Component):
 class Vlm(sim.Component):
 
 
-    def __init__(self, target_floor_number, speed, loading_time, picker, location, initial_tower, vlm_name):
+    def __init__(self, target_floor_number, speed, loading_time, picker, location, tower, vlm_name):
         super().__init__()
         self.target_floor_number = target_floor_number
         self.current_floor_number = target_floor_number
@@ -88,8 +118,7 @@ class Vlm(sim.Component):
         self.bay_status = sim.State(f'{vlm_name}_bay', value=BayStatus.IDLE)
         self.order_queue = sim.Queue(f'{vlm_name}_orderQueue')
 
-        # the tower is a 2d array. first dimention is the floor number, second dimention is the trays
-        self.tower = initial_tower
+        self.tower = tower
 
     def process(self):
         while True:
@@ -112,22 +141,21 @@ class Vlm(sim.Component):
         self.order_queue.add(order)
 
 
-
 env = sim.Environment(trace=True)
 person = Person("Person1")
 vlmOne = Vlm(0, 1, 10, person, 0, [[]], "VlmOne")
 vlmTwo = Vlm(0, 1, 10, person, 10, [[]], "VlmTwo")
-OrderGenerator([vlmOne, vlmTwo])
+OrderGenerator([vlmOne, vlmTwo], 2)
 
 
 
 
 towerGenerator = TowerGenerator()
-towerOne = towerGenerator.get_tower(10, 2, 20)
+towerOne = towerGenerator.get_tower(10, 2, 20, "TowerOne")
 # print tower
 for level in towerOne:
-    for tray in level:
-        content = tray.content
+    for Tray in level:
+        content = Tray.content
         print(content)
 """
 
