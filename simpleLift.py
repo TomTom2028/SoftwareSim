@@ -1,4 +1,4 @@
-# simple shit: one floor that spawns items. the lift takes the tray down, and takes one of the tray
+# simple shit: one floor that spawns items. the vlm takes the tray down, and takes one of the tray
 import random
 from enum import Enum
 import salabim as sim
@@ -23,11 +23,11 @@ class Person(sim.Component):
             while len(self.notification_queue) == 0:
                 self.standby()
             current_notification = self.notification_queue.pop()
-            goto_lift = current_notification.lift
-            self.hold(get_time(self.current_location, goto_lift.location, 0.5))
-            self.current_location = goto_lift.location
+            goto_vlm = current_notification.vlm
+            self.hold(get_time(self.current_location, goto_vlm.location, 0.5))
+            self.current_location = goto_vlm.location
             self.hold(self.get_picktime())
-            goto_lift.bay_status.set(BayStatus.IDLE)
+            goto_vlm.bay_status.set(BayStatus.IDLE)
 
 
     def get_picktime(self):
@@ -37,24 +37,24 @@ class Person(sim.Component):
         notification.enter(self.notification_queue)
 
 class PickerNotification(sim.Component):
-    def __init__(self, lift):
+    def __init__(self, vlm):
         super().__init__()
-        self.lift = lift
+        self.vlm = vlm
     def process(self):
         self.passivate()
 
 
 
 class OrderGenerator(sim.Component):
-    def __init__(self, lifts):
+    def __init__(self, vlms):
         super().__init__()
-        self.lifts = lifts
+        self.vlms = vlms
     def process(self):
         while True:
-            # take a random lift
-            random_lift = random.choice(self.lifts)
+            # take a random vlm
+            random_vlm = random.choice(self.vlms)
             order = Order(sim.Uniform(0, 10).sample())
-            random_lift.schedule(order)
+            random_vlm.schedule(order)
             self.hold(sim.Uniform(10, 50).sample())
 
 
@@ -68,20 +68,20 @@ class Order(sim.Component):
         self.passivate()
 
 
-#lift takes order out of the queue
-class Lift(sim.Component):
-    def __init__(self, target_floor_number, speed, loading_time, picker, location, lift_name):
+#vlm takes order out of the queue
+class Vlm(sim.Component):
+    def __init__(self, target_floor_number, speed, loading_time, picker, location, vlm_name):
         super().__init__()
         self.target_floor_number = target_floor_number
         self.current_floor_number = target_floor_number
         self.loading_time = loading_time
         self.speed = speed
         self.picker = picker
-        self.lift_name = lift_name
+        self.vlm_name = vlm_name
         self.location = location
 
-        self.bay_status = sim.State(f'{lift_name}_bay', value=BayStatus.IDLE)
-        self.order_queue = sim.Queue(f'{lift_name}_orderQueue')
+        self.bay_status = sim.State(f'{vlm_name}_bay', value=BayStatus.IDLE)
+        self.order_queue = sim.Queue(f'{vlm_name}_orderQueue')
 
     def process(self):
         while True:
@@ -104,19 +104,17 @@ class Lift(sim.Component):
         self.order_queue.add(order)
 
 
-
-
 env = sim.Environment(trace=True)
 person = Person("Person1")
-liftOne = Lift(0, 1, 10, person, 0, "LiftOne")
-liftTwo = Lift(0, 1, 10, person, 10, "LiftTwo")
-OrderGenerator([liftOne, liftTwo])
+vlmOne = Vlm(0, 1, 10, person, 0, "VlmOne")
+vlmTwo = Vlm(0, 1, 10, person, 10, "VlmTwo")
+OrderGenerator([vlmOne, vlmTwo])
 
 env.run(till=5000)
-liftOne.order_queue.length.print_histogram(30, 0, 1)
+vlmOne.order_queue.length.print_histogram(30, 0, 1)
 print()
-liftOne.order_queue.length_of_stay.print_histogram(30, 0, 10)
+vlmOne.order_queue.length_of_stay.print_histogram(30, 0, 10)
 print('\n')
-liftTwo.order_queue.length.print_histogram(30, 0, 1)
+vlmTwo.order_queue.length.print_histogram(30, 0, 1)
 print()
-liftTwo.order_queue.length_of_stay.print_histogram(30, 0, 10)
+vlmTwo.order_queue.length_of_stay.print_histogram(30, 0, 10)
