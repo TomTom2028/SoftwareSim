@@ -60,7 +60,6 @@ class OrderGenerator(sim.Component):
         self.avg_amount_of_items = avg_amount_of_items
         self.arbiter = arbiter
 
-
     def assemble_random_order(self) -> dict[str, int]:
         item_count_dicts = [vlm.get_corrected_items_count() for vlm in self.vlms]
         item_dict = {}
@@ -89,7 +88,6 @@ class OrderGenerator(sim.Component):
             item_dict[item] -= amount
         return order_items
 
-
     def process(self):
         while True:
             # take a random vlm
@@ -99,7 +97,7 @@ class OrderGenerator(sim.Component):
             random_order = self.assemble_random_order()
             print("ORDER", random_order)
             if len(random_order) == 0:
-                return # we are done:)
+                return # we are done
             self.arbiter.schedule(random_order)
             self.hold(sim.Uniform(10, 50).sample())
 
@@ -194,6 +192,8 @@ class Vlm(sim.Component):
     def process_order(self):
         while not is_item_order_empty(self.current_order):
             tray, item, amount_to_take = self.get_tray_for_part_of_order(self.current_order)
+            if amount_to_take == 0:
+                raise ValueError("This should not happen")
             tray.reserve_items({item: amount_to_take})
             # remove the items form the order
             self.current_order.order_items[item] -= amount_to_take
@@ -219,6 +219,7 @@ class Vlm(sim.Component):
             level.slot_tray(tray)
             self.in_transit_tray = None
             self.hold(self.loading_time)  # robot loading time
+        self.current_order = None
 
     def schedule(self, order):
         self.order_queue.add(order)
@@ -229,10 +230,9 @@ class Vlm(sim.Component):
         trays = self.get_all_trays()
         for tray in trays:
             items_in_tray = tray.get_items_count()
-            for item in order.order_items:
-                if item in items_in_tray and items_in_tray[item] > 0:
-                    to_take = min(order.order_items[item], items_in_tray[item])
-                    return tray, item, to_take
+            for order_item in order.order_items:
+                if order_item in items_in_tray and items_in_tray[order_item] > 0 and order.order_items[order_item] > 0:
+                    return tray, order_item, min(order.order_items[order_item], items_in_tray[order_item])
         raise ValueError("No tray found")
 
     # returns the height of the tray and the level or null
@@ -294,8 +294,8 @@ class Vlm(sim.Component):
 env = sim.Environment(trace=True)
 person = Person("Person1")
 towerGenerator = TowerGenerator()
-towerOne = towerGenerator.get_tower(10, 2, 100, "VlmOne")
-towerTwo = towerGenerator.get_tower(10, 2, 100, "VlmTwo")
+towerOne = towerGenerator.get_tower(7, 2, 5, "VlmOne")
+towerTwo = towerGenerator.get_tower(7, 2, 5, "VlmTwo")
 vlmOne = Vlm(0, 1, 10, person, 0, towerOne, "VlmOne")
 vlmTwo = Vlm(0, 1, 10, person, 10, towerTwo, "VlmTwo")
 arbiter = Arbiter([vlmOne, vlmTwo])
@@ -307,6 +307,7 @@ OrderGenerator([vlmOne, vlmTwo], 2, arbiter)
 
 
 env.run(till=10000)
+print(f"Length of order queues: {len(vlmOne.order_queue)} {len(vlmTwo.order_queue)}")
 vlmOne.order_queue.length.print_histogram(30, 0, 1)
 print()
 vlmOne.order_queue.length_of_stay.print_histogram(30, 0, 10)
