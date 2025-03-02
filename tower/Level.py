@@ -19,7 +19,7 @@ class Level(sim.Component):
         raise ValueError("No empty bays")
     def get_tray(self, tray_name):
         for bay in self.bays:
-            if bay.tray.name == tray_name:
+            if bay.tray.tray_name == tray_name:
                 return bay.remove_tray()
         raise ValueError("Tray not found")
     #TODO: figure out what to do with moving trays
@@ -27,7 +27,7 @@ class Level(sim.Component):
         items_dict = {}
         for bay in self.bays:
             if bay.tray is not None:
-                for item_name, item_count in bay.tray.content.items():
+                for item_name, item_count in bay.tray.get_items_count().items():
                     if item_name in items_dict:
                         items_dict[item_name] += item_count
                     else:

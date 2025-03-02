@@ -5,23 +5,47 @@ class Tray(sim.Component):
         if initial_content is None:
             initial_content = {}
         self.content = initial_content
-        self.name = name
+        self.reserved_content = {}
+        self.tray_name = name
     def process(self):
         self.passivate()
 
     def add_item(self, item):
-        if (item_name := item.name) in self.content:
-            self.content[item_name] += 1
+        if item in self.content:
+            self.content[item] += 1
         else:
-            self.content[item_name] = 1
+            self.content[item] = 1
 
     def get_item_count(self, item):
-        return self.content.get(item, 0)
+        return self.content.get(item, 0) - self.reserved_content.get(item, 0)
 
-    def remove_item(self, item):
-        if (item_name := item.name) in self.content:
-            self.content[item_name] -= 1
-            if self.content[item_name] == 0:
-                del self.content[item_name]
+    def get_items_count(self):
+        correct_items_dict = {}
+        for item_name in self.content:
+            correct_items_dict[item_name] = self.get_item_count(item_name)
+        return correct_items_dict
+
+
+    def remove_item(self, item, amount):
+        if item in self.content:
+            self.content[item] -= amount
+            if self.content[item] == 0:
+                del self.content[item]
         else:
             raise ValueError("Item not in tray")
+        if item in self.reserved_content:
+            self.reserved_content[item] -= amount
+            if self.reserved_content[item] == 0:
+                del self.reserved_content[item]
+
+    def reserve_items(self, items_dict):
+        for item_name, item_count in items_dict.items():
+            if item_name in self.content:
+                if self.get_item_count(item_name) < 0:
+                    raise ValueError("Not enough items in tray")
+                if item_name in self.reserved_content:
+                    self.reserved_content[item_name] += item_count
+                else:
+                    self.reserved_content[item_name] = item_count
+            else:
+                raise ValueError("Item not in tray")

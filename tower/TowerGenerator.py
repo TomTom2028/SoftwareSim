@@ -1,7 +1,6 @@
 import random
 
-from Tray import Tray
-from tower.Tower import Tower
+from tower.Tray import Tray
 from tower.Level import Level
 
 class TowerGenerator:
@@ -10,17 +9,17 @@ class TowerGenerator:
                       "Necklace", "Ring", "Earrings", "Perfume", "Lipstick", "Mascara", "Foundation", "Blush",]
 
 
-    def get_tower(self, amount_of_levels, trays_per_level, average_items_per_tray, tower_name):
+    def get_tower(self, amount_of_levels, trays_per_level, average_items_per_tray, vlm_name):
         levels = []
         tray_counter = 0
         for i in range(amount_of_levels):
             level = Level(f"Level_{i}", trays_per_level)
             for j in range(trays_per_level):
-                tray = self.get_random_tray(f"{tower_name}_{tray_counter}", average_items_per_tray)
+                tray = self.get_random_tray(f"{vlm_name}_{tray_counter}", average_items_per_tray)
                 tray_counter += 1
                 level.slot_tray(tray)
             levels.append(level)
-        return Tower(tower_name, levels)
+        return levels
 
     def get_random_tray(self, name, average_items_per_tray):
         real_items_this_tray_has = random.randint(1, average_items_per_tray * 2)
