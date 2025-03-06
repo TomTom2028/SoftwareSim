@@ -57,7 +57,7 @@ class DoubleLift(sim.Component):
         super().__init__()
         self.lift_high_orders = []
         self.lift_low_orders = []
-        self.state = sim.State("Action", value="waiting")
+        self.state = sim.State("Action", value="Waiting")
         self.loading_time = loading_time
         self.speed = self.speed = speed
         self.picker = picker
@@ -67,7 +67,10 @@ class DoubleLift(sim.Component):
         lift_low_pos = sim.State("lift_low_pos", value=-1)
         while True:
             while len(orderQueue) < 2:
+                self.state = sim.State("Action", value="Waiting")
                 self.standby()
+            
+            self.state = sim.State("Action", value="Fetching")
             self.order_one = orderQueue.pop()
             self.order_two = orderQueue.pop()
             if self.order_two.floor_number < self.order_one.floor_number:
@@ -102,6 +105,7 @@ class DoubleLift(sim.Component):
 
             # Naar pickingstation
             # hoogste zal altijd langste tijd moeten afleggen.
+            self.state = sim.State("Action", value="Delivery")
             self.hold(self.lift_high_orders[0].floor_number / self.speed)
             lift_high_pos.set(0)
             lift_low_pos.set(-1)
@@ -110,25 +114,32 @@ class DoubleLift(sim.Component):
             self.hold(self.loading_time)
 
             # picking door picker
+            self.state = sim.State("Action", value="Picking")
             self.hold(self.picker.get_picktime)
 
             # reload bakske high
             self.hold(self.loading_time)
 
             # verplaatsen low en high 1 naar boven
+            self.state = sim.State("Action", value="Delivery")
             self.hold(1 / self.speed)
+            lift_high_pos.set(1)
+            lift_low_pos.set(0)
 
             # load bakske low
             ld_time_in = self.loading_time
             self.hold(ld_time_in)
 
             # picking door picker
+            self.state = sim.State("Action", value="Picking")
             pick_time = self.picker.get_picktime()
             self.hold(pick_time)
 
             # reload bakske low
             ld_time_out = self.loading_time
             self.hold(ld_time_out)
+
+            self.state = sim.State("Action", value="Return")
 
             # Als het langer duurt voor de onderste op locatie te komen dan wachten we daar op anders wachten we op de bovenste.
             # Ook hier heeft het geen zin om voorsprong tenemen we wachten sws op de onderste lift.
@@ -137,6 +148,9 @@ class DoubleLift(sim.Component):
                 self.hold(self.lift_low_orders[0].floor_number / self.speed)  # starts from 0
             else:
                 self.hold((self.lift_high_orders[0].floor_number - 1) / self.speed)
+
+            lift_high_pos.set(self.lift_high_orders[0].floor_number)
+            lift_low_pos.set(self.lift_low_orders[0].floor_number)
 
             # plaats bak terug
             self.hold(self.loading_time)
