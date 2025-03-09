@@ -4,7 +4,9 @@ from enum import Enum
 import salabim as sim
 
 from tower import Level
+from tower.OrderGenerator import OrderGenerator
 from tower.TowerGenerator import TowerGenerator
+from tower.VlmUtilities import vlm_filler
 from tower.Tray import Tray
 
 
@@ -53,40 +55,13 @@ class PickerNotification(sim.Component):
 
 
 
-class OrderGenerator(sim.Component):
-    def __init__(self, vlms, avg_amount_of_items, arbiter):
+class OrderQueuer(sim.Component):
+    def __init__(self, vlms, avg_amount_of_items, arbiter, orders):
         super().__init__()
         self.vlms = vlms
         self.avg_amount_of_items = avg_amount_of_items
         self.arbiter = arbiter
-
-    def assemble_random_order(self) -> dict[str, int]:
-        item_count_dicts = [vlm.get_corrected_items_count() for vlm in self.vlms]
-        item_dict = {}
-        for item_count_dict in item_count_dicts:
-            for item in item_count_dict:
-                if item in item_dict:
-                    item_dict[item] += item_count_dict[item]
-                else:
-                    item_dict[item] = item_count_dict[item]
-        order_items = {}
-        amount_of_items = sim.Poisson(self.avg_amount_of_items).sample()
-        amount_of_items = int(max(1, amount_of_items))
-
-        while amount_of_items > 0 and len(item_dict) > 0:
-            item = random.choice(list(item_dict.keys()))
-            total_amount_items_left = item_dict[item]
-            if total_amount_items_left == 0:
-                del item_dict[item]
-                continue
-            amount = random.randint(1, min(amount_of_items, total_amount_items_left))
-            if item in order_items:
-                order_items[item] += amount
-            else:
-                order_items[item] = amount
-            amount_of_items -= amount
-            item_dict[item] -= amount
-        return order_items
+        self.orders = orders
 
     def process(self):
         while True:
@@ -94,12 +69,13 @@ class OrderGenerator(sim.Component):
             print("VLM CONTENTS")
             for vlm in self.vlms:
                 print(vlm.get_corrected_items_count())
-            random_order = self.assemble_random_order()
-            print("ORDER", random_order)
-            if len(random_order) == 0:
-                return # we are done
-            self.arbiter.schedule(random_order)
+           # take the first order
+            current_order = self.orders.pop(0)
+            print("ORDER", current_order)
+            self.arbiter.schedule(current_order)
             self.hold(sim.Uniform(10, 50).sample())
+            if (len(self.orders) == 0):
+                return
 
 
 
@@ -289,17 +265,35 @@ class Vlm(sim.Component):
         return to_return_items_count
 
 
-
+orderGenerator = OrderGenerator()
+orders = orderGenerator.generate_pre_orders(18)
+combinedItems = {}
+for order in orders:
+    for item in order:
+        if item in combinedItems:
+            combinedItems[item] += order[item]
+        else:
+            combinedItems[item] = order[item]
+print(orders)
+print(combinedItems)
 
 env = sim.Environment(trace=True)
 person = Person("Person1")
 towerGenerator = TowerGenerator()
-towerOne = towerGenerator.get_tower(7, 2, 5, "VlmOne")
-towerTwo = towerGenerator.get_tower(7, 2, 5, "VlmTwo")
+towerOne = towerGenerator.get_tower(7, 2,  "VlmOne")
+towerTwo = towerGenerator.get_tower(7, 2,  "VlmTwo")
 vlmOne = Vlm(0, 1, 10, person, 0, towerOne, "VlmOne")
 vlmTwo = Vlm(0, 1, 10, person, 10, towerTwo, "VlmTwo")
+vlm_filler([vlmOne, vlmTwo], combinedItems)
+# print the items in the system
+print("ITEMS IN SYSTEM")
+print(vlmOne.get_corrected_items_count())
+print(vlmTwo.get_corrected_items_count())
+
+
+
 arbiter = Arbiter([vlmOne, vlmTwo])
-OrderGenerator([vlmOne, vlmTwo], 2, arbiter)
+OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
 
 

@@ -16,6 +16,12 @@ class Tray(sim.Component):
         else:
             self.content[item] = 1
 
+    def add_items(self, item, amount):
+        if item in self.content:
+            self.content[item] += amount
+        else:
+            self.content[item] = amount
+
     def get_item_count(self, item):
         return self.content.get(item, 0) - self.reserved_content.get(item, 0)
 
