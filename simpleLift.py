@@ -10,8 +10,8 @@ class Person(sim.Component):
 class OrderGenerator(sim.Component):
     def process(self):
         while True:
-            Order(sim.Uniform(0, 10).sample())
-            Order(sim.Uniform(0, 10).sample())
+            Order(int(sim.Uniform(1, 10).sample()))
+            Order(int(sim.Uniform(1, 10).sample()))
             self.hold(sim.Uniform(20, 100).sample())
 
 
