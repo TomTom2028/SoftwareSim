@@ -61,7 +61,7 @@ class Arbiter:
 
 
 orderGenerator = OrderGenerator()
-orders = orderGenerator.generate_pre_orders(18)
+orders = orderGenerator.generate_pre_orders(30)
 combinedItems = {}
 for order in orders:
     for item in order:
@@ -97,8 +97,13 @@ OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
 
 
-env.run(till=10000)
+env.run(till=100000)
 print(f"Length of order queues: {len(vlmOne.order_queue)} {len(vlmTwo.order_queue)}")
+for order in vlmOne.order_queue:
+    print(f"VlmOne: {order.order_items}")
+
+for order in vlmTwo.order_queue:
+    print(f"VlmTwo: {order.order_items}")
 vlmOne.order_queue.length.print_histogram(30, 0, 1)
 print()
 vlmOne.order_queue.length_of_stay.print_histogram(30, 0, 10)

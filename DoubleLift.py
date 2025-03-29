@@ -47,9 +47,12 @@ class DoubleLift(sim.Component):
                 self.standby()
             # each level can only be once in the instruction queue
             # this makes sure both lifts can't take both levels
-            for order in self.order_queue:
+            removed_orders = []
+            for i in range(len(self.order_queue)):
+                order = self.order_queue[i]
                 process_next_order = False
                 while not process_next_order:
+
                     instruction = self.gen_vlm_instruction(order, self.get_blacklisted_trays())
                     if instruction is None:
                         process_next_order = True
@@ -61,15 +64,14 @@ class DoubleLift(sim.Component):
                             instruction.tray.reserve_items(instruction.fetch_dict)
                             if order.order_items[item] == 0:
                                 del order.order_items[item]
-                if is_item_order_empty:
-                    self.order_queue.remove(order)
+                if is_item_order_empty(order):
+                    removed_orders.append(order)
+            #self.order_queue[i] = order
             # the queue is empty or full of uselss orders, so standby
             self.process_instructionqueue()
             self.state = sim.State("Action", value="Waiting")
-            self.standby()
-
-
-        self.process_order()
+            for order in removed_orders:
+                self.order_queue.remove(order)
 
     def get_blacklisted_trays(self):
         # go trough the instruction queue and get all the trays
@@ -267,5 +269,12 @@ class DoubleLift(sim.Component):
                     to_return_items_count[item_name] += item_count
                 else:
                     to_return_items_count[item_name] = item_count
+        # get all items in order queue and subtract them!
+        for order in self.order_queue:
+            for item_name, item_count in order.order_items.items():
+                if item_name in to_return_items_count:
+                    to_return_items_count[item_name] -= item_count
+                else:
+                    to_return_items_count[item_name] = -item_count
         return to_return_items_count
 
