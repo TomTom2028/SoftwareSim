@@ -1,5 +1,6 @@
 from enum import Enum
 import salabim as sim
+from math import pow
 
 
 class VlmItemOrder(sim.Component):
@@ -30,3 +31,37 @@ class BayStatus(Enum):
 
 def get_time(a, b, speed):
     return abs(a - b)/speed
+
+def time_calc(s_tot, v_max):
+    # should be part of the vlm at some point
+    a_max = 1
+    j_max = 3
+    shape = -1
+
+    v_a = (a_max*a_max/j_max)
+    s_a = 2*pow(a_max, 3)/pow(j_max,2)
+    s_v = v_max*((v_max/a_max)+a_max/j_max)
+
+    if(s_tot<s_a):
+        shape = 1
+    elif(v_max<v_a):
+        shape = 2
+    elif(s_tot<s_v):
+        shape = 3
+    else:
+        shape = 4
+
+    match shape:
+        case 1:
+            return pow((s_tot/(2*j_max)), 1/3)
+        case 2:
+            return (s_tot/v_max - pow((v_max/j_max),0.5))
+        case 3:
+            t_j = a_max/j_max
+            t_a1 = (4*s_tot*pow(j_max,2)+pow(a_max,3))/(a_max*pow(j_max,2))
+            t_a2 = 3*a_max/j_max
+            return t_j + 0.5*(pow(t_a1, 0.5)-t_a2)
+        case 4:
+            return s_tot/v_max + a_max/j_max
+        case -1:
+            exit(-1)
