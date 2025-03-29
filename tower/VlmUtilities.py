@@ -18,3 +18,10 @@ def vlm_filler(vlms, items: dict[str, int]):
         if items[random_item] == 0:
             del items[random_item]
 
+
+
+def create_item_dict(item_names: list[str], avg_amount: int, min_amount: int):
+    items = {}
+    for item in item_names:
+        items[item] = random.randint(min_amount, avg_amount * 2)
+    return items

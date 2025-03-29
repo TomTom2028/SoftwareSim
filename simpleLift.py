@@ -3,7 +3,7 @@ import salabim as sim
 
 from tower.OrderGenerator import OrderGenerator
 from tower.TowerGenerator import TowerGenerator
-from tower.VlmUtilities import vlm_filler
+from tower.VlmUtilities import vlm_filler, create_item_dict
 from DoubleLift import DoubleLift
 from Other import VlmItemOrder
 from Person import *
@@ -33,8 +33,9 @@ class OrderQueuer(sim.Component):
 
 
 class Arbiter:
-    def __init__(self, vlms):
+    def __init__(self, vlms, bad_item_dict: dict[str, int]):
         self.vlms = vlms
+        self.bad_item_dict = bad_item_dict
     # NOTE: it is not really important in what order the VLMS themself process the sets
     # TODO: make this somewhat smart
     def schedule(self, order_items: dict[str, int]):
@@ -53,7 +54,11 @@ class Arbiter:
                     item_orders_per_vlm[idx][item] = to_take
             if needed_amount != 0:
                 print(item, needed_amount)
-                raise ValueError("Not enough items in the system")
+                if item not in self.bad_item_dict:
+                    self.bad_item_dict[item] = needed_amount
+                else:
+                    self.bad_item_dict[item] += needed_amount
+                order_items[item] = 0
 
         # push the items trough to the vlm
         for idx, item_order in enumerate(item_orders_per_vlm):
@@ -61,7 +66,7 @@ class Arbiter:
 
 
 orderGenerator = OrderGenerator()
-orders = orderGenerator.generate_pre_orders(30)
+orders = orderGenerator.generate_pre_orders(10)
 combinedItems = {}
 for order in orders:
     for item in order:
@@ -81,15 +86,15 @@ towerTwo = towerGenerator.get_tower(7, 2,  "VlmTwo")
 #vlmTwo = Vlm(0, 1, 10, person, 10, towerTwo, "VlmTwo")
 vlmOne = DoubleLift(1, 10, person, 10, towerTwo, "VlmTwo")
 vlmTwo = DoubleLift(1, 10, person, 0, towerOne, "VlmOne")
-vlm_filler([vlmOne, vlmTwo], combinedItems)
+vlm_filler([vlmOne, vlmTwo], create_item_dict(list(combinedItems.keys()), 200, 20))
 # print the items in the system
 print("ITEMS IN SYSTEM")
 print(vlmOne.get_corrected_items_count())
 print(vlmTwo.get_corrected_items_count())
 
 
-
-arbiter = Arbiter([vlmOne, vlmTwo])
+badItemDict = {}
+arbiter = Arbiter([vlmOne, vlmTwo], badItemDict)
 OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
 
@@ -104,6 +109,11 @@ for order in vlmOne.order_queue:
 
 for order in vlmTwo.order_queue:
     print(f"VlmTwo: {order.order_items}")
+
+print("Total amount of items not in the system: ")
+print(badItemDict)
+
+
 vlmOne.order_queue.length.print_histogram(30, 0, 1)
 print()
 vlmOne.order_queue.length_of_stay.print_histogram(30, 0, 10)
