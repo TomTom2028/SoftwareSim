@@ -23,7 +23,7 @@ class Vlm(sim.Component):
 
         self.levels = levels
         self.current_order = None
-        self.in_transit_tray: None or Tray = None
+        self.docked_tray: None or Tray = None
 
     def process(self):
         while True:
@@ -50,7 +50,7 @@ class Vlm(sim.Component):
             self.hold(hold_time)
             self.current_floor_number = height
             level.get_tray(tray.tray_name)
-            self.in_transit_tray = tray
+            self.docked_tray = tray
             self.hold(self.loading_time) # robot loading time
             hold_time = get_time(self.current_floor_number, 0, self.speed)
             self.hold(hold_time) # go down time
@@ -62,7 +62,7 @@ class Vlm(sim.Component):
             hold_time = get_time(self.current_floor_number, height, self.speed)
             self.hold(hold_time)
             level.slot_tray(tray)
-            self.in_transit_tray = None
+            self.docked_tray = None
             self.hold(self.loading_time)  # robot loading time
         self.current_order = None
 
@@ -82,7 +82,7 @@ class Vlm(sim.Component):
 
     # returns the height of the tray and the level or null
     def find_tray(self, tray):
-        if self.in_transit_tray == tray:
+        if self.docked_tray == tray:
             return self.current_floor_number, None
         for level in self.levels:
             for bay in level.bays:
@@ -98,8 +98,8 @@ class Vlm(sim.Component):
             for bay in level.bays:
                 if bay.tray is not None:
                     trays.append(bay.tray)
-        if self.in_transit_tray is not None:
-            trays.append(self.in_transit_tray)
+        if self.docked_tray is not None:
+            trays.append(self.docked_tray)
         return trays
 
 

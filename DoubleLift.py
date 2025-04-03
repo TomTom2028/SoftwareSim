@@ -37,6 +37,7 @@ class DoubleLift(sim.Component):
 
 
         self.instruction_queue = sim.Queue(f'{vlm_name}_instruction_queue')
+        self.docked_tray: Tray = None
 
 
     def schedule(self, order):
@@ -151,6 +152,7 @@ class DoubleLift(sim.Component):
             self.hold(tray_high_lvl / self.speed)
             self.lift_high_pos.set(0)
             self.lift_low_pos.set(-1)
+            self.docked_tray = self.in_transit_tray_high
 
             # unloading high in picking bay
             self.hold(self.loading_time)
@@ -170,6 +172,7 @@ class DoubleLift(sim.Component):
             self.hold(1 / self.speed)
             self.lift_high_pos.set(1)
             self.lift_low_pos.set(0)
+            self.docked_tray = self.in_transit_tray_low
 
             # load bakske low
             ld_time_in = self.loading_time
@@ -210,26 +213,28 @@ class DoubleLift(sim.Component):
         elif len(self.instruction_queue) == 1:
             #tray, item, amount_to_take = self.get_tray_for_part_of_order(self.current_order)
             self.instruction_one = self.instruction_queue.pop()
+            self.lift_low_instructions.append(self.instruction_one)
             tray = self.instruction_one.tray
             # remove the items form the order
             level = self.find_tray(tray)
             if level is None:
                 raise ValueError("In this iteration of the program the bay should be put back!")
             # go to the tray
-            hold_time = get_time(self.lift_low_pos.get(), level, self.speed)
+            hold_time = get_time(self.lift_low_pos.get(), level.get(), self.speed)
             self.hold(hold_time)
-            self.lift_low_pos.set(level)
-            self.lift_high_pos.set(level+1)
+            self.lift_low_pos.set(level.get())
+            self.lift_high_pos.set(level.get() +1)
             self.in_transit_tray_low = tray
             self.hold(self.loading_time) # robot loading time
             hold_time = get_time(self.lift_low_pos.get(), 0, self.speed)
             self.hold(hold_time) # go down time
             self.bay_status.set(BayStatus.READY)
+            self.docked_tray = self.in_transit_tray_low
             self.picker.schedule_notification(PickerNotification(self, self.lift_low_instructions[0].fetch_dict))
 
             self.wait((self.bay_status, BayStatus.IDLE))
             # put the tray back
-            hold_time = get_time(self.lift_low_pos.get(), level, self.speed)
+            hold_time = get_time(self.lift_low_pos.get(), level.get(), self.speed)
             self.hold(hold_time)
             level.slot_tray(tray)
             self.in_transit_tray_low = None
@@ -245,7 +250,7 @@ class DoubleLift(sim.Component):
         while len(self.instruction_queue) > 0:
             instruction = self.instruction_queue.pop()
             tray = instruction.tray
-            self.in_transit_tray = tray
+            self.docked_tray = tray
             self.bay_status.set(BayStatus.READY)
             self.picker.schedule_notification(PickerNotification(self, instruction.fetch_dict))
 
