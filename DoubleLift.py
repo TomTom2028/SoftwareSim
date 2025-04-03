@@ -229,7 +229,7 @@ class DoubleLift(sim.Component):
 
             self.wait((self.bay_status, BayStatus.IDLE))
             # put the tray back
-            hold_time = get_time(self.current_floor_number, height, self.speed)
+            hold_time = get_time(self.lift_low_pos.get(), level, self.speed)
             self.hold(hold_time)
             level.slot_tray(tray)
             self.in_transit_tray_low = None
