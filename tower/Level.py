@@ -4,8 +4,9 @@ from tower.Bay import Bay
 
 
 class Level(sim.Component):
-    def __init__(self, level_name, amount_of_bays):
+    def __init__(self, niveau, level_name, amount_of_bays):
         super().__init__()
+        self.niveau = niveau
         self.level_name = level_name
         self.bays = [Bay(f"{level_name}_bay_{i}", None) for i in range(amount_of_bays)]
     def process(self):
@@ -33,3 +34,6 @@ class Level(sim.Component):
                     else:
                         items_dict[item_name] = item_count
         return items_dict
+    
+    def get(self):
+        return self.niveau

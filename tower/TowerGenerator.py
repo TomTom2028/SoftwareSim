@@ -13,7 +13,7 @@ class TowerGenerator:
         levels = []
         tray_counter = 0
         for i in range(amount_of_levels):
-            level = Level(f"Level_{i}", trays_per_level)
+            level = Level(i, f"Level_{i}", trays_per_level)
             for j in range(trays_per_level):
                 tray = self.get_random_tray(f"{vlm_name}_{tray_counter}")
                 tray_counter += 1

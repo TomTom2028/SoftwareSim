@@ -69,7 +69,7 @@ class DoubleLift(sim.Component):
                     removed_orders.append(order)
             #self.order_queue[i] = order
             # the queue is empty or full of uselss orders, so standby
-            self.process_instructionqueue()
+            self.process_instructionqueue_TOFIX()
             self.state = sim.State("Action", value="Waiting")
             for order in removed_orders:
                 self.order_queue.remove(order)
@@ -103,20 +103,20 @@ class DoubleLift(sim.Component):
             self.instruction_two = self.instruction_queue.pop() #instruction_queue.pop()
             tray_one_lvl = self.find_tray(self.instruction_one.tray)
             tray_two_lvl = self.find_tray(self.instruction_two.tray)
-            if tray_two_lvl < tray_one_lvl:
+            if tray_two_lvl.get() < tray_one_lvl.get():
                 self.lift_high_instructions.append(self.instruction_one)
                 tray_high = self.instruction_one.tray
                 self.lift_low_instructions.append(self.instruction_two)
                 tray_low = self.instruction_two.tray
-                tray_high_lvl = tray_one_lvl
-                tray_low_lvl = tray_two_lvl
-            elif tray_one_lvl < tray_two_lvl:
+                tray_high_lvl = tray_one_lvl.get()
+                tray_low_lvl = tray_two_lvl.get()
+            elif tray_one_lvl.get() < tray_two_lvl.get():
                 self.lift_high_instructions.append(self.instruction_two)
                 tray_high = self.instruction_two.tray
                 self.lift_low_instructions.append(self.instruction_one)
                 tray_low = self.instruction_one.tray
-                tray_high_lvl = tray_two_lvl
-                tray_low_lvl = tray_one_lvl
+                tray_high_lvl = tray_two_lvl.get()
+                tray_low_lvl = tray_one_lvl.get()
             else:
                 raise Exception("it broke")
                 self.order_two.floor_number = self.order_two.floor_number - 1  # TODO fix
@@ -218,8 +218,8 @@ class DoubleLift(sim.Component):
             # go to the tray
             hold_time = get_time(self.lift_low_pos.get(), level, self.speed)
             self.hold(hold_time)
-            self.lift_low_pos.get() = level
-            self.lift_high_pos.get() = level+1
+            self.lift_low_pos.set(level)
+            self.lift_high_pos.set(level+1)
             self.in_transit_tray_low = tray
             self.hold(self.loading_time) # robot loading time
             hold_time = get_time(self.lift_low_pos.get(), 0, self.speed)
