@@ -11,8 +11,8 @@ class DoubleLift(sim.Component):
         super().__init__()
 
 
-        self.lift_high_orders = []
-        self.lift_low_orders = []
+        self.lift_high_instructions = []
+        self.lift_low_instructions = []
 
 
         self.state = sim.State("Action", value="Waiting")
@@ -32,7 +32,8 @@ class DoubleLift(sim.Component):
         self.lift_high_pos = sim.State(f"{vlm_name}_high_pos", value=0)
         self.lift_low_pos = sim.State(f"{vlm_name}_low_pos", value=-1)
 
-        self.in_transit_tray: None or Tray = None #TODO: rename
+        self.in_transit_tray_high: None or Tray = None #TODO: rename
+        self.in_transit_tray_low: None or Tray = None #TODO: rename
 
 
         self.instruction_queue = sim.Queue(f'{vlm_name}_instruction_queue')
@@ -98,34 +99,47 @@ class DoubleLift(sim.Component):
     def process_instructionqueue_TOFIX(self):
         if (len(self.instruction_queue) > 1):
             self.state = sim.State("Action", value="Fetching")
-            self.order_one = None # instruction_queue.pop()
-            self.order_two = None #instruction_queue.pop()
-            if self.order_two.floor_number < self.order_one.floor_number:
-                self.lift_high_orders.append(self.order_one)
-                self.lift_low_orders.append(self.order_two)
-            elif self.order_one.floor_number < self.order_two.floor_number:
-                self.lift_high_orders.append(self.order_two)
-                self.lift_low_orders.append(self.order_one)
+            self.instruction_one = self.instruction_queue.pop() # instruction_queue.pop()
+            self.instruction_two = self.instruction_queue.pop() #instruction_queue.pop()
+            tray_one_lvl = self.find_tray(self.instruction_one.tray)
+            tray_two_lvl = self.find_tray(self.instruction_two.tray)
+            if tray_two_lvl < tray_one_lvl:
+                self.lift_high_instructions.append(self.instruction_one)
+                tray_high = self.instruction_one.tray
+                self.lift_low_instructions.append(self.instruction_two)
+                tray_low = self.instruction_two.tray
+                tray_high_lvl = tray_one_lvl
+                tray_low_lvl = tray_two_lvl
+            elif tray_one_lvl < tray_two_lvl:
+                self.lift_high_instructions.append(self.instruction_two)
+                tray_high = self.instruction_two.tray
+                self.lift_low_instructions.append(self.instruction_one)
+                tray_low = self.instruction_one.tray
+                tray_high_lvl = tray_two_lvl
+                tray_low_lvl = tray_one_lvl
             else:
                 raise Exception("it broke")
                 self.order_two.floor_number = self.order_two.floor_number - 1  # TODO fix
-                self.lift_low_orders.append(self.order_two)
-                self.lift_high_orders.append(self.order_one)
+                self.lift_low_instructions.append(self.instruction_two)
+                self.lift_high_instructions.append(self.instruction_one)
+
+            self.in_transit_tray_high = tray_high
+            self.in_transit_tray_low = tray_low
 
             # Langste tijd want de andere lift kan geen voorsprong nemen aangezien bij het afladen
             # steeds op de andere gewacht moet worden
             # Bereken langste afstand tussen lift en bestemming
-            if abs(self.lift_low_pos.get() - self.lift_low_orders[0].floor_number) > abs(
-                    self.lift_high_pos.get() - self.lift_high_orders[0].floor_number):
-                delta = abs(self.lift_low_pos.get() - self.lift_low_orders[0].floor_number)
+            if abs(self.lift_low_pos.get() - tray_low_lvl) > abs(
+                    self.lift_high_pos.get() - tray_high_lvl):
+                delta = abs(self.lift_low_pos.get() - tray_low_lvl)
             else:
-                delta = abs(self.lift_high_pos.get() - self.lift_high_orders[0].floor_number)
+                delta = abs(self.lift_high_pos.get() - tray_high_lvl)
 
             travel_time = delta / self.speed
             # Verplaats naar de bestemmingen
             self.hold(travel_time)
-            self.lift_high_pos.set(self.lift_high_orders[0].floor_number)
-            self.lift_low_pos.set(self.lift_low_orders[0].floor_number)
+            self.lift_high_pos.set(tray_high_lvl)
+            self.lift_low_pos.set(tray_low_lvl)
 
             # TODO: actually pickup
             # we "pick up" the thing
@@ -134,7 +148,7 @@ class DoubleLift(sim.Component):
             # Naar pickingstation
             # hoogste zal altijd langste tijd moeten afleggen.
             self.state = sim.State("Action", value="Delivery")
-            self.hold(self.lift_high_orders[0].floor_number / self.speed)
+            self.hold(tray_high_lvl / self.speed)
             self.lift_high_pos.set(0)
             self.lift_low_pos.set(-1)
 
@@ -143,7 +157,10 @@ class DoubleLift(sim.Component):
 
             # picking door picker
             self.state = sim.State("Action", value="Picking")
-            self.hold(self.picker.get_picktime)
+            self.bay_status.set(BayStatus.READY)
+            self.picker.schedule_notification(PickerNotification(self, self.lift_high_instructions[0].fetch_dict))
+            self.wait((self.bay_status, BayStatus.IDLE))
+
 
             # reload bakske high
             self.hold(self.loading_time)
@@ -160,8 +177,9 @@ class DoubleLift(sim.Component):
 
             # picking door picker
             self.state = sim.State("Action", value="Picking")
-            pick_time = self.picker.get_picktime()
-            self.hold(pick_time)
+            self.bay_status.set(BayStatus.READY)
+            self.picker.schedule_notification(PickerNotification(self, self.lift_low_instructions[0].fetch_dict))
+            self.wait((self.bay_status, BayStatus.IDLE))
 
             # reload bakske low
             ld_time_out = self.loading_time
@@ -171,32 +189,49 @@ class DoubleLift(sim.Component):
 
             # Als het langer duurt voor de onderste op locatie te komen dan wachten we daar op anders wachten we op de bovenste.
             # Ook hier heeft het geen zin om voorsprong tenemen we wachten sws op de onderste lift.
-            if ld_time_out + ld_time_in + pick_time + self.lift_low_orders[0].floor_number / self.speed > (
-                    self.lift_high_orders[0].floor_number - 1) / self.speed:
-                self.hold(self.lift_low_orders[0].floor_number / self.speed)  # starts from 0
+            if ld_time_out + ld_time_in + tray_low_lvl / self.speed > (
+                    tray_high_lvl - 1) / self.speed:
+                self.hold(tray_low_lvl / self.speed)  # starts from 0
             else:
-                self.hold((self.lift_high_orders[0].floor_number - 1) / self.speed)
+                self.hold((tray_high_lvl - 1) / self.speed)
 
-            self.lift_high_pos.set(self.lift_high_orders[0].floor_number)
-            self.lift_low_pos.set(self.lift_low_orders[0].floor_number)
+            self.lift_high_pos.set(tray_high_lvl)
+            self.lift_low_pos.set(tray_low_lvl)
+            self.in_transit_tray_high = None
+            self.in_transit_tray_low = None
 
             # plaats bak terug
             self.hold(self.loading_time)
 
-            order = self.lift_high_orders.pop(0)
+            order = self.lift_high_instructions.pop(0)
             order.activate()
-            order = self.lift_low_orders.pop(0)
+            order = self.lift_low_instructions.pop(0)
             order.activate()
         elif len(self.instruction_queue) == 1:
-            #TODO fix beter
-            self.state = sim.State("Action", value="Fetching")
-            instruction = self.instruction_queue.pop()
-            tray = instruction.tray
+            tray, item, amount_to_take = self.get_tray_for_part_of_order(self.current_order)
+            # remove the items form the order
+            height, level = self.find_tray(tray)
+            if level is None:
+                raise ValueError("In this iteration of the program the bay should be put back!")
+            # go to the tray
+            hold_time = get_time(self.current_floor_number, height, self.speed)
+            self.hold(hold_time)
+            self.current_floor_number = height
+            level.get_tray(tray.tray_name)
             self.in_transit_tray = tray
+            self.hold(self.loading_time) # robot loading time
+            hold_time = get_time(self.current_floor_number, 0, self.speed)
+            self.hold(hold_time) # go down time
             self.bay_status.set(BayStatus.READY)
-            self.picker.schedule_notification(PickerNotification(self, instruction.fetch_dict))
+            self.picker.schedule_notification(PickerNotification(self, {item: amount_to_take}))
 
             self.wait((self.bay_status, BayStatus.IDLE))
+            # put the tray back
+            hold_time = get_time(self.current_floor_number, height, self.speed)
+            self.hold(hold_time)
+            level.slot_tray(tray)
+            self.in_transit_tray = None
+            self.hold(self.loading_time)  # robot loading time
 
         # Cyclus herbegint
     # returns the height of the tray and the level or null
@@ -226,6 +261,7 @@ class DoubleLift(sim.Component):
             items_in_tray = tray.get_items_count()
             for order_item in order.order_items:
                 if order_item in items_in_tray and items_in_tray[order_item] > 0 and order.order_items[order_item] > 0:
+                    items_in_tray
                     return InternalVLMInstruction(tray, {order_item: min(order.order_items[order_item], items_in_tray[order_item])})
         return None
 
@@ -260,6 +296,7 @@ class DoubleLift(sim.Component):
                 if bay.tray == tray:
                     return level
         return None
+    
     def get_corrected_items_count(self):
         # add everything in the trays
         to_return_items_count: dict[str, int] = {}
