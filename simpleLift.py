@@ -102,7 +102,7 @@ OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
 
 
-env.run(till=100000)
+env.run(till=1000000)
 print(f"Length of order queues: {len(vlmOne.order_queue)} {len(vlmTwo.order_queue)}")
 for order in vlmOne.order_queue:
     print(f"VlmOne: {order.order_items}")

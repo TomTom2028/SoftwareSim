@@ -45,7 +45,7 @@ class DoubleLift(sim.Component):
 
     def process(self):
         while True:
-            while len(self.order_queue) == 0:
+            while len(self.order_queue) == 0 and len(self.instruction_queue) == 0:
                 self.standby()
             # each level can only be once in the instruction queue
             # this makes sure both lifts can't take both levels
@@ -104,6 +104,8 @@ class DoubleLift(sim.Component):
             self.instruction_two = self.instruction_queue.pop() #instruction_queue.pop()
             tray_one_lvl = self.find_tray(self.instruction_one.tray)
             tray_two_lvl = self.find_tray(self.instruction_two.tray)
+            tray_one_lvl.get_tray(self.instruction_one.tray.tray_name)
+            tray_two_lvl.get_tray(self.instruction_two.tray.tray_name)
             if tray_two_lvl.get() < tray_one_lvl.get():
                 self.lift_high_instructions.append(self.instruction_one)
                 tray_high = self.instruction_one.tray
@@ -206,10 +208,14 @@ class DoubleLift(sim.Component):
             # plaats bak terug
             self.hold(self.loading_time)
 
+            tray_one_lvl.slot_tray(self.instruction_one.tray)
+            tray_two_lvl.slot_tray(self.instruction_two.tray)
+
             order = self.lift_high_instructions.pop(0)
             order.activate()
             order = self.lift_low_instructions.pop(0)
             order.activate()
+
         elif len(self.instruction_queue) == 1:
             #tray, item, amount_to_take = self.get_tray_for_part_of_order(self.current_order)
             self.instruction_one = self.instruction_queue.pop()
@@ -222,6 +228,8 @@ class DoubleLift(sim.Component):
             # go to the tray
             hold_time = get_time(self.lift_low_pos.get(), level.get(), self.speed)
             self.hold(hold_time)
+            level.get_tray(tray.tray_name)
+
             self.lift_low_pos.set(level.get())
             self.lift_high_pos.set(level.get() +1)
             self.in_transit_tray_low = tray
@@ -272,7 +280,7 @@ class DoubleLift(sim.Component):
                     return InternalVLMInstruction(tray, {order_item: min(order.order_items[order_item], items_in_tray[order_item])})
         return None
 
-    def find_tray(self, tray):
+    def find_tray(self, tray) -> Level:
         if self.high_in_transit_tray == tray:
             return None
         if self.low_in_transit_tray == tray:
