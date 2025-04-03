@@ -208,29 +208,31 @@ class DoubleLift(sim.Component):
             order = self.lift_low_instructions.pop(0)
             order.activate()
         elif len(self.instruction_queue) == 1:
-            tray, item, amount_to_take = self.get_tray_for_part_of_order(self.current_order)
+            #tray, item, amount_to_take = self.get_tray_for_part_of_order(self.current_order)
+            self.instruction_one = self.instruction_queue.pop()
+            tray = self.instruction_one.tray
             # remove the items form the order
             height, level = self.find_tray(tray)
             if level is None:
                 raise ValueError("In this iteration of the program the bay should be put back!")
             # go to the tray
-            hold_time = get_time(self.current_floor_number, height, self.speed)
+            hold_time = get_time(self.lift_low_pos.get(), level, self.speed)
             self.hold(hold_time)
-            self.current_floor_number = height
-            level.get_tray(tray.tray_name)
-            self.in_transit_tray = tray
+            self.lift_low_pos.get() = level
+            self.lift_high_pos.get() = level+1
+            self.in_transit_tray_low = tray
             self.hold(self.loading_time) # robot loading time
-            hold_time = get_time(self.current_floor_number, 0, self.speed)
+            hold_time = get_time(self.lift_low_pos.get(), 0, self.speed)
             self.hold(hold_time) # go down time
             self.bay_status.set(BayStatus.READY)
-            self.picker.schedule_notification(PickerNotification(self, {item: amount_to_take}))
+            self.picker.schedule_notification(PickerNotification(self, self.lift_low_instructions[0].fetch_dict))
 
             self.wait((self.bay_status, BayStatus.IDLE))
             # put the tray back
             hold_time = get_time(self.current_floor_number, height, self.speed)
             self.hold(hold_time)
             level.slot_tray(tray)
-            self.in_transit_tray = None
+            self.in_transit_tray_low = None
             self.hold(self.loading_time)  # robot loading time
 
         # Cyclus herbegint
