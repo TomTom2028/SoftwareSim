@@ -212,7 +212,7 @@ class DoubleLift(sim.Component):
             self.instruction_one = self.instruction_queue.pop()
             tray = self.instruction_one.tray
             # remove the items form the order
-            height, level = self.find_tray(tray)
+            level = self.find_tray(tray)
             if level is None:
                 raise ValueError("In this iteration of the program the bay should be put back!")
             # go to the tray
@@ -269,13 +269,13 @@ class DoubleLift(sim.Component):
 
     def find_tray(self, tray):
         if self.high_in_transit_tray == tray:
-            return self.lift_high_pos.get(), None
+            return None
         if self.low_in_transit_tray == tray:
-            return self.lift_low_pos.get(), None
+            return None
         for level in self.levels:
             for bay in level.bays:
                 if bay.tray == tray:
-                    return self.current_floor_number, level
+                    return level
         raise ValueError("No tray found")
 
 
