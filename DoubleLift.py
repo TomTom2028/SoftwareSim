@@ -1,4 +1,8 @@
+from typing import Any, Tuple
+
 import salabim as sim
+
+from GraphicsSettings import VLMTHICKNESS, LAYERHEIGHT
 from tower import Level
 from tower.Tray import Tray
 from Other import *
@@ -10,6 +14,7 @@ class DoubleLift(sim.Component):
     def __init__(self, speed, loading_time, picker, location, levels: [Level], vlm_name):
         super().__init__()
 
+        self.vlm_name = vlm_name
 
         self.lift_high_instructions = []
         self.lift_low_instructions = []
@@ -38,6 +43,9 @@ class DoubleLift(sim.Component):
 
         self.instruction_queue = sim.Queue(f'{vlm_name}_instruction_queue')
         self.docked_tray: Tray = None
+        multiplier = 20
+
+        self.rect = sim.AnimateRectangle(spec=((self.location - VLMTHICKNESS / 2) * multiplier, 0, (self.location + VLMTHICKNESS / 2) * multiplier, len(levels) * LAYERHEIGHT), fillcolor="blue" ,text=self.vlm_name, layer=-1)
 
 
     def schedule(self, order):
@@ -329,4 +337,3 @@ class DoubleLift(sim.Component):
                 else:
                     to_return_items_count[item_name] = -item_count
         return to_return_items_count
-
