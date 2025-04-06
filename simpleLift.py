@@ -81,7 +81,7 @@ env = sim.Environment(trace=True)
 person = Person("Person1")
 towerGenerator = TowerGenerator()
 towerOne = towerGenerator.get_tower(7, 2,  "VlmOne", 20)
-towerTwo = towerGenerator.get_tower(4, 2,  "VlmTwo", 40)
+towerTwo = towerGenerator.get_tower(1, 2,  "VlmTwo", 40)
 #vlmOne = Vlm(0, 1, 10, person, 0, towerOne, "VlmOne")
 #vlmTwo = Vlm(0, 1, 10, person, 10, towerTwo, "VlmTwo")
 # DER IS IETS MIS ALS VLM 1 locatie 30 is en VLM2 locatie 10

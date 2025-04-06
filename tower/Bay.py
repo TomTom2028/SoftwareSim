@@ -10,16 +10,16 @@ class Bay(sim.Component):
         self.tray = tray
 
         if is_first:
-            self.gui_x_left = vlm_location_x - VLMTHICKNESS - BAYTHICKNESS
-            self.gui_x_right = vlm_location_x - VLMTHICKNESS
+            self.gui_x_left = (vlm_location_x - VLMTHICKNESS / 2) * MULTIPLIER - BAYTHICKNESS
+            self.gui_x_right = (vlm_location_x - VLMTHICKNESS / 2) * MULTIPLIER
         else:
-            self.gui_x_left = vlm_location_x - VLMTHICKNESS
-            self.gui_x_right = vlm_location_x - VLMTHICKNESS + BAYTHICKNESS
+            self.gui_x_left = (vlm_location_x + VLMTHICKNESS / 2) * MULTIPLIER
+            self.gui_x_right = (vlm_location_x + VLMTHICKNESS /2) * MULTIPLIER + BAYTHICKNESS
 
         self.gui_y_bottom = LAYERHEIGHT * niveau
         self.gui_y_top = LAYERHEIGHT * (niveau + 1)
 
-        self.rect = sim.AnimateRectangle(spec=(self.gui_x_left, self.gui_y_bottom, self.gui_x_right, self.gui_y_top), fillcolor="red", text=self.bay_name, layer=-1)
+        self.rect = sim.AnimateRectangle(spec=(self.gui_x_left, self.gui_y_bottom, self.gui_x_right, self.gui_y_top), fillcolor="red", text=self.bay_name, layer=0)
     def process(self):
         self.passivate()
     def set_tray(self, tray):
