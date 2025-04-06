@@ -81,12 +81,15 @@ env = sim.Environment(trace=True)
 person = Person("Person1")
 towerGenerator = TowerGenerator()
 towerOne = towerGenerator.get_tower(7, 2,  "VlmOne")
-towerTwo = towerGenerator.get_tower(4, 2,  "VlmTwo")
+towerTwo = towerGenerator.get_tower(7, 2,  "VlmTwo")
 #vlmOne = Vlm(0, 1, 10, person, 0, towerOne, "VlmOne")
 #vlmTwo = Vlm(0, 1, 10, person, 10, towerTwo, "VlmTwo")
-vlmOne = DoubleLift(1, 10, person, 30, towerTwo, "VlmTwo")
-vlmTwo = DoubleLift(1, 10, person, 10, towerOne, "VlmOne")
-vlm_filler([vlmOne, vlmTwo], create_item_dict(list(combinedItems.keys()), 200, 20))
+vlmOne = DoubleLift(1, 10, person, 30, towerOne, "VlmOne")
+vlmTwo = DoubleLift(1, 10, person, 10, towerTwo, "VlmTwo")
+vlm_filler([
+    vlmOne,
+    vlmTwo
+], create_item_dict(list(combinedItems.keys()), 200, 20))
 # print the items in the system
 print("ITEMS IN SYSTEM")
 print(vlmOne.get_corrected_items_count())
@@ -97,7 +100,7 @@ badItemDict = {}
 arbiter = Arbiter([vlmOne, vlmTwo], badItemDict)
 OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
-env.animate(True)
+env.animate(False)
 
 
 
