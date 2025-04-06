@@ -2,7 +2,7 @@ from typing import Any, Tuple
 
 import salabim as sim
 
-from GraphicsSettings import VLMTHICKNESS, LAYERHEIGHT
+from GraphicsSettings import VLMTHICKNESS, LAYERHEIGHT, MULTIPLIER
 from tower import Level
 from tower.Tray import Tray
 from Other import *
@@ -43,10 +43,7 @@ class DoubleLift(sim.Component):
 
         self.instruction_queue = sim.Queue(f'{vlm_name}_instruction_queue')
         self.docked_tray: Tray = None
-        multiplier = 20
-
-        self.rect = sim.AnimateRectangle(spec=((self.location - VLMTHICKNESS / 2) * multiplier, 0, (self.location + VLMTHICKNESS / 2) * multiplier, len(levels) * LAYERHEIGHT), fillcolor="blue" ,text=self.vlm_name, layer=-1)
-
+        self.rect = sim.AnimateRectangle(spec=((self.location - VLMTHICKNESS / 2) * MULTIPLIER, 0, (self.location + VLMTHICKNESS / 2) * MULTIPLIER, len(self.levels) * LAYERHEIGHT), fillcolor="blue" ,text=self.vlm_name, layer=-1)
 
     def schedule(self, order):
         self.order_queue.add(order)
@@ -244,8 +241,8 @@ class DoubleLift(sim.Component):
             self.hold(self.loading_time) # robot loading time
             hold_time = get_time(self.lift_low_pos.get(), 0, self.speed)
             self.hold(hold_time) # go down time
-            self.bay_status.set(BayStatus.READY)
             self.docked_tray = self.in_transit_tray_low
+            self.bay_status.set(BayStatus.READY)
             self.picker.schedule_notification(PickerNotification(self, self.lift_low_instructions[0].fetch_dict))
 
             self.wait((self.bay_status, BayStatus.IDLE))

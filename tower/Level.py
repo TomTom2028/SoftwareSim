@@ -1,14 +1,15 @@
 import salabim as sim
 
+from GraphicsSettings import VLMTHICKNESS
 from tower.Bay import Bay
 
 
 class Level(sim.Component):
-    def __init__(self, niveau, level_name, amount_of_bays):
+    def __init__(self, niveau, level_name, amount_of_bays, vlm_location_x):
         super().__init__()
         self.niveau = niveau
         self.level_name = level_name
-        self.bays = [Bay(f"{level_name}_bay_{i}", None) for i in range(amount_of_bays)]
+        self.bays = [Bay(f"{level_name}_bay_{i}", None, niveau, vlm_location_x, i == 0) for i in range(amount_of_bays)]
     def process(self):
         self.passivate()
 

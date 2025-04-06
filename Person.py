@@ -16,6 +16,7 @@ class Person(sim.Component):
             goto_vlm = current_notification.vlm
             self.hold(get_time(self.current_location, goto_vlm.location, 0.5))
             self.current_location = goto_vlm.location
+            self.wait((goto_vlm.bay_status, BayStatus.READY))
             for item_name, amount in current_notification.to_pick_items.items():
                 self.hold(self.get_picktime())
                 goto_vlm.docked_tray.remove_item(item_name, amount)

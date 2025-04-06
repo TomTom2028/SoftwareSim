@@ -9,11 +9,11 @@ class TowerGenerator:
                       "Necklace", "Ring", "Earrings", "Perfume", "Lipstick", "Mascara", "Foundation", "Blush",]
 
 
-    def get_tower(self, amount_of_levels, trays_per_level, vlm_name):
+    def get_tower(self, amount_of_levels, trays_per_level, vlm_name, vlm_location_x):
         levels = []
         tray_counter = 0
         for i in range(amount_of_levels):
-            level = Level(i, f"Level_{i}", trays_per_level)
+            level = Level(i, f"Level_{i}", trays_per_level, vlm_location_x)
             for j in range(trays_per_level):
                 tray = self.get_random_tray(f"{vlm_name}_{tray_counter}")
                 tray_counter += 1
