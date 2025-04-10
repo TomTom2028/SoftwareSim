@@ -89,7 +89,7 @@ vlmOne = DoubleLift(1, 10, person, 20, towerOne, "VlmOne")
 vlmTwo = DoubleLift(1, 10, person, 40, towerTwo, "VlmTwo")
 vlm_filler([
     vlmOne,
-#    vlmTwo
+   vlmTwo
 ], create_item_dict(list(combinedItems.keys()), 200, 20))
 # print the items in the system
 print("ITEMS IN SYSTEM")
