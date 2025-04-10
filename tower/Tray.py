@@ -7,7 +7,6 @@ class Tray(sim.Component):
         self.content = initial_content
         self.reserved_content = {}
         self.tray_name = name
-        self.rect = sim.AnimateRectangle(spec=(0, 0, 0, 0), fillcolor="blue" ,text=self.tray_name, layer=-1)
 
     def process(self):
         self.passivate()
