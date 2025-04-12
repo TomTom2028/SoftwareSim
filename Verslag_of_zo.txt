@@ -1,0 +1,24 @@
+Bemerkingen op de opgave:
+
+Met de huidige data is jet niet mogelijk om iets te kunnen zeggen over de invloed van de verdeling van de items over de tray op het order debiet van de opstelling.
+Dit vanwege volgende redenen. We hebben geen info over hoe lang de neemtijd is in een specifieke situatie. Hierdoor kunnen we geen onderscheid maken tussen een pikker 
+die gelijk welk item uit een tray kan pakken omdat ze allemaal identiek zijn en een pikker die eerst het juiste item moet zoeken in de random collectie van items. 
+Verder zou de overhead vooral te naar boven komen bij het vullen van de trays, aangezien het systeem moet weten waar items zich bevinden. Dus of worden de items 
+op een vaste plaats gelegd en moet de vuller de nodige items aan zoeken of worden items willekeurig geplaatst en moeten die op één of andere wijze nog in het systeem 
+aan de tray gelinkt worden. 
+Men zou kunnen stellen dat in realistische situaties er slechts één tot tien verschillende items per tray geplaatst zullen worden en 
+dat de pikker na een tijd wel vertrouwd zal zijn met de opstelling. Uit mondelinge overgave horen we echter dat zo'n VLM weliswaar altijd propvol zitten dus veronderstellen 
+we dat gestructureerde trays zelden aan de orde is. Bovendien zal de verhouding trays en aantal items hier ook een sterke invloed op hebben plus de frequentie waaraan de
+stock verandert. Als deze laatste regelmatig verandert valt er ook weinig vertrouwdheid mee op te bouwen.
+Verder is het zonder de picker data niet zinnig om de vergelijking te maken want een opstelling met random gevulde trays zal gemiddelde altijd een groter debiet hebben. 
+We stellen dit omdat de kans dat een tray ook een item voor de volgende order bevat gaat omhoog met het aantal items in de tray. Slechts als het volgende order hetzelfde item
+nodig heeft kan een tray met één soort blijven staan terwijl een tray met alle soorten items steeds kan blijven totdat een item nodig is dat op is.
+
+Verder zijn we van mening dat het niet zinvol is meerdere strategieën te bekijken die de neem- en terugplaatslokaties stipuleren. Zoals eerder al vermeld zijn in quasi 
+alle gevallen de liften vol gepropt en is er dus geen ruimte om trays te wisselen of te herverdelen.
+
+// KLOPT niet peisk
+//Dit deel van de opdracht loopt ook vast op een ander aspect van de situatie.
+//Als output vallen er twee resultaten te vergelijken: het aantal orders per uur of het aantal uur voor N orders. Hoewel ze hetzelfde lijken uit te drukken hebben ze een andere insteek.
+//Voor beide situaties kunnen we uitgaan van eenzelfde toestroom van orders waarbij het tijdsintervat tussen order volgens een zekere poisson verdeling verloopt.
+//Voor de eerste situatie moet er dan een begin staat gekozen worden.
