@@ -22,3 +22,19 @@ alle gevallen de liften vol gepropt en is er dus geen ruimte om trays te wissele
 //Als output vallen er twee resultaten te vergelijken: het aantal orders per uur of het aantal uur voor N orders. Hoewel ze hetzelfde lijken uit te drukken hebben ze een andere insteek.
 //Voor beide situaties kunnen we uitgaan van eenzelfde toestroom van orders waarbij het tijdsintervat tussen order volgens een zekere poisson verdeling verloopt.
 //Voor de eerste situatie moet er dan een begin staat gekozen worden.
+
+
+
+Er zijn heel wat verschillende opstellingen in de data, het grootste aantal (37%) van de rijen is OSR. De grootste 13 bevatten 57% van alle rijen.
+We hebben gekozen om rijen te groeperen volgens location code en het interval tussen opeenvolgende wijzegingen van tasks te beschouwen als de picktijd.
+Een andere logische keuze zou de line numbers zijn maar bij het uitzetten van de histogram van de intervallen, is duidelijk te zien dat de verdeling 
+een combinatie van verschillende verdelingen is. 
+
+Aangezien een heel aantal intervallen rond de nul seconden lang is hebben we voorlopig enkel intervallen groter of gelijk één seconde beschouwt. Voor de grootste, OSR, 
+is de verdeling duidlijk niet poission verdeelt (*aantonen). Voor de PTL-NEST opstellingen is de verdeling wel poission (*aantonen).
+De OSR lijkt ons een realistischere verdleing voor de picker bij de VLM aangezien we steeds een zekere hoeveelheid tijd verwachten voor het picken van een item.
+Dus tenzij er twee items tegleijk genomen kunnen worden, zal het interval nooit nul zijn. En als twee items tegleijk genomen kunnen worden dan is dit iets om in de 
+simulatie te verwerken.
+
+Enkel incoming houden we inrekening om niet alle intervallen tussen incoming en outgoing van dezelfde task in data te steken maar er zijn ook bizarre gevallen 
+waar enkel de één of ander in de lijst staat. Dus misschien moeten we filteren op* outgoing ipv incoming
