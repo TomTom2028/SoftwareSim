@@ -51,3 +51,4 @@ Stock porduct id en item code ook
 Task number slaat op het picken van 1 soort item -> kan dus meerdere keren voorkomen maar ltijd voor hetzelfde type item. (heeft dan een verschillend sequence number)
 Location code is de "machine", parent conatienr zal de bak zijn.
 Outbound orders doet wel vermeoden dat er vaak meerdere items samen worden besteld.
+'Last Changed Dt' is hoogtens 0.3s later dan 'Creation Dt'
