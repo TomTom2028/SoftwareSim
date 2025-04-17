@@ -24,6 +24,12 @@ alle gevallen de liften vol gepropt en is er dus geen ruimte om trays te wissele
 //Voor de eerste situatie moet er dan een begin staat gekozen worden.
 
 
+
+Over de opvullingen van de trays:
+Heel vaak maar 1 item. hoe het eruit ziet is dat er precies met een emmer van random stukken is gevuld. dus heel veel unieke items maar heel weinig van elk item.
+Deze volgt normale/chi² verdeling.
+
+
 # Data
 Er zijn heel wat verschillende opstellingen in de data, het grootste aantal (37%) van de rijen is OSR. De grootste 13 bevatten 57% van alle rijen.
 We hebben gekozen om rijen te groeperen volgens location code en het interval tussen opeenvolgende wijzegingen van tasks te beschouwen als de picktijd.
