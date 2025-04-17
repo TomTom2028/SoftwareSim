@@ -24,7 +24,7 @@ alle gevallen de liften vol gepropt en is er dus geen ruimte om trays te wissele
 //Voor de eerste situatie moet er dan een begin staat gekozen worden.
 
 
-
+# Data
 Er zijn heel wat verschillende opstellingen in de data, het grootste aantal (37%) van de rijen is OSR. De grootste 13 bevatten 57% van alle rijen.
 We hebben gekozen om rijen te groeperen volgens location code en het interval tussen opeenvolgende wijzegingen van tasks te beschouwen als de picktijd.
 Een andere logische keuze zou de line numbers zijn maar bij het uitzetten van de histogram van de intervallen, is duidelijk te zien dat de verdeling 
@@ -38,3 +38,16 @@ simulatie te verwerken.
 
 Enkel incoming houden we inrekening om niet alle intervallen tussen incoming en outgoing van dezelfde task in data te steken maar er zijn ook bizarre gevallen 
 waar enkel de één of ander in de lijst staat. Dus misschien moeten we filteren op* outgoing ipv incoming
+
+
+Verder hebben we ee nanatal vaststellingen gedaan rond de combinaties van items.
+
+als we er van uit gaan dat item codes op items slaan en task number
+
+
+info over de data:
+Outbound order number en picklist number zijn paarsgewijs altijd hetzelfde
+Stock porduct id en item code ook
+Task number slaat op het picken van 1 soort item -> kan dus meerdere keren voorkomen maar ltijd voor hetzelfde type item. (heeft dan een verschillend sequence number)
+Location code is de "machine", parent conatienr zal de bak zijn.
+Outbound orders doet wel vermeoden dat er vaak meerdere items samen worden besteld.
