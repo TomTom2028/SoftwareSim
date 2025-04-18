@@ -29,6 +29,12 @@ Over de opvullingen van de trays:
 Heel vaak maar 1 item. hoe het eruit ziet is dat er precies met een emmer van random stukken is gevuld. dus heel veel unieke items maar heel weinig van elk item.
 Deze volgt normale/chi² verdeling.
 
+We gebruiken inventory data niet. probleem is dat er geen tijden instaan en geen enkele parent container ovreeent aast komt!
+Check gedaan. er is amper correlatie tussen de verschillende items in een order.
+
+Over de orders: zoals verwacht: dikke exponentiele voor de individuele orders.
+Binnen een order: eig ook nooit correlatie
+
 
 # Data
 Er zijn heel wat verschillende opstellingen in de data, het grootste aantal (37%) van de rijen is OSR. De grootste 13 bevatten 57% van alle rijen.
@@ -59,3 +65,4 @@ Location code is de "machine", parent conatienr zal de bak zijn.
 Outbound orders doet wel vermeoden dat er vaak meerdere items samen worden besteld. Er zijn +-21k paren die meer dan 30 keer voorkomen. Hoe items die meerdere 
 keren voorkomen in dezelfde order gemodeleerd moeten worden is me nog een vraagteken.
 'Last Changed Dt' is hoogtens 0.33s later dan 'Creation Dt'
+De Inventory Qty gaan vanuit dat is "hoevveel haalt ge uit die parent container"
