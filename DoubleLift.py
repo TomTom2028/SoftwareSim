@@ -83,7 +83,8 @@ class DoubleLift(sim.Component):
                         # also reserve the items
                         for item in instruction.fetch_dict:
                             order.order_items[item] -= instruction.fetch_dict[item]
-                            instruction.tray.reserve_items(instruction.fetch_dict)
+                            instruction.tray.content[item] -= instruction.fetch_dict[item]
+                            #instruction.tray.reserve_items(instruction.fetch_dict)
                             if order.order_items[item] == 0:
                                 del order.order_items[item]
                 if is_item_order_empty(order):
