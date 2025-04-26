@@ -90,7 +90,7 @@ vlmTwo = DoubleLift(1, 10, person, 40, towerTwo, "VlmTwo")
 vlm_filler([
     vlmOne,
    vlmTwo
-], create_item_dict(list(combinedItems.keys()), 200, 20))
+], create_item_dict(list(combinedItems.keys()), 10, 4))
 # print the items in the system
 print("ITEMS IN SYSTEM")
 print(vlmOne.get_corrected_items_count())
@@ -101,7 +101,7 @@ badItemDict = {}
 arbiter = Arbiter([vlmOne, vlmTwo], badItemDict)
 OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
-env.animate(True)
+#env.animate(True)
 
 
 
