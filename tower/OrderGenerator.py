@@ -1,5 +1,6 @@
 import random
 import pickle
+import numpy as np
 
 POSSIBLE_ITEMS = ["I-phone", "Orange", "Lenovo Laptop", "Water bottle", "Parker pen", "Wallet",
                   "Sunglasses", "Headphones", "Book", "T-shirt", "Jeans", "Shoes", "Watch", "Bracelet",
@@ -10,6 +11,20 @@ with open('chance_dict.pkl', 'rb') as f:
 
 chance_dict_keys = list(chance_dict.keys())
 
+def item_fn(x, a, c, d):
+    return a*np.exp(-c*x)+d
+
+item_params_quargs = [1.16754861e+04, 4.92942725e-01, 5.77416566e+01]
+
+# proba test of the above curve
+item_counts = list(range(1, 50))
+def wrapper_exp(x):
+    return func(x, *params)
+frequencies = [item_fn(n, *item_params_quargs) for n in item_counts]
+total_orders = sum(frequencies)
+probabilities_for_amount_items = [freq / total_orders for freq in frequencies]
+
+
 class OrderGenerator:
     def generate_pre_orders(self, amount_of_orders):
         orders = []
@@ -19,7 +34,9 @@ class OrderGenerator:
         return orders
 
     def get_random_order(self, name):
-        amount_of_items = 20 # TODO: randomize!
+        amount_of_items = random.choices(item_counts, weights=probabilities_for_amount_items, k=1)[0]
+        if amount_of_items == 0:
+            raise Exception("should not happen")
         order_flat = []
         first_item = random.choice(chance_dict_keys)
         order_flat.append(first_item)
@@ -34,4 +51,6 @@ class OrderGenerator:
         for item in unique_items:
             order_dict[item] = order_flat.count(item)
         return order_dict
+
+
 
