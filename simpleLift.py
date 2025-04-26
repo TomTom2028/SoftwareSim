@@ -80,13 +80,17 @@ print(combinedItems)
 env = sim.Environment(trace=True)
 person = Person("Person1")
 towerGenerator = TowerGenerator()
-towerOne = towerGenerator.get_tower(7, 2,  "VlmOne")
-towerTwo = towerGenerator.get_tower(7, 2,  "VlmTwo")
+towerOne = towerGenerator.get_tower(7, 2,  "VlmOne", 20)
+towerTwo = towerGenerator.get_tower(4, 2,  "VlmTwo", 40)
 #vlmOne = Vlm(0, 1, 10, person, 0, towerOne, "VlmOne")
 #vlmTwo = Vlm(0, 1, 10, person, 10, towerTwo, "VlmTwo")
-vlmOne = DoubleLift(1, 10, person, 10, towerTwo, "VlmTwo")
-vlmTwo = DoubleLift(1, 10, person, 0, towerOne, "VlmOne")
-vlm_filler([vlmOne, vlmTwo], create_item_dict(list(combinedItems.keys()), 200, 20))
+# DER IS IETS MIS ALS VLM 1 locatie 30 is en VLM2 locatie 10
+vlmOne = DoubleLift(1, 10, person, 20, towerOne, "VlmOne")
+vlmTwo = DoubleLift(1, 10, person, 40, towerTwo, "VlmTwo")
+vlm_filler([
+    vlmOne,
+   vlmTwo
+], create_item_dict(list(combinedItems.keys()), 200, 20))
 # print the items in the system
 print("ITEMS IN SYSTEM")
 print(vlmOne.get_corrected_items_count())
@@ -97,6 +101,7 @@ badItemDict = {}
 arbiter = Arbiter([vlmOne, vlmTwo], badItemDict)
 OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
+env.animate(True)
 
 
 

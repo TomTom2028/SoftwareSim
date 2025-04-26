@@ -7,6 +7,7 @@ class Tray(sim.Component):
         self.content = initial_content
         self.reserved_content = {}
         self.tray_name = name
+
     def process(self):
         self.passivate()
 

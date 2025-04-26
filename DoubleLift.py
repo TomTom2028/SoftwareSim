@@ -1,4 +1,8 @@
+from typing import Any, Tuple
+
 import salabim as sim
+
+from GraphicsSettings import VLMTHICKNESS, LAYERHEIGHT, MULTIPLIER, BASE_Y
 from tower import Level
 from tower.Tray import Tray
 from Other import *
@@ -10,6 +14,7 @@ class DoubleLift(sim.Component):
     def __init__(self, speed, loading_time, picker, location, levels: [Level], vlm_name):
         super().__init__()
 
+        self.vlm_name = vlm_name
 
         self.lift_high_instructions = []
         self.lift_low_instructions = []
@@ -38,6 +43,21 @@ class DoubleLift(sim.Component):
 
         self.instruction_queue = sim.Queue(f'{vlm_name}_instruction_queue')
         self.docked_tray: Tray = None
+        self.rect = sim.AnimateRectangle(spec=((self.location - VLMTHICKNESS / 2) * MULTIPLIER, BASE_Y, (self.location + VLMTHICKNESS / 2) * MULTIPLIER, len(self.levels) * LAYERHEIGHT + BASE_Y), fillcolor="blue" ,text=self.vlm_name, layer=0)
+        self._rect_height = None
+        self._rect_low = None
+
+    def update_rects(self):
+        if self._rect_height is not None:
+            self._rect_height.remove()
+        if self._rect_low is not None:
+            self._rect_low.remove()
+        self._rect_height = sim.AnimateRectangle(
+            spec=((self.location - VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_high_pos.get() + 1) * LAYERHEIGHT, (self.location + VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_high_pos.get() + 2) * LAYERHEIGHT), fillcolor="green", layer=-1, text=self.in_transit_tray_high.tray_name if self.in_transit_tray_high is not None else "None")
+        self._rect_low = sim.AnimateRectangle(spec=((self.location - VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_low_pos.get() + 1) * LAYERHEIGHT, (self.location + VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_low_pos.get() + 2) * LAYERHEIGHT), fillcolor="green", layer=-1, text=self.in_transit_tray_low.tray_name if self.in_transit_tray_low is not None else "None")
+        self._rect_height.show()
+        self._rect_low.show()
+
 
 
     def schedule(self, order):
@@ -63,7 +83,8 @@ class DoubleLift(sim.Component):
                         # also reserve the items
                         for item in instruction.fetch_dict:
                             order.order_items[item] -= instruction.fetch_dict[item]
-                            instruction.tray.reserve_items(instruction.fetch_dict)
+                            instruction.tray.content[item] -= instruction.fetch_dict[item]
+                            #instruction.tray.reserve_items(instruction.fetch_dict)
                             if order.order_items[item] == 0:
                                 del order.order_items[item]
                 if is_item_order_empty(order):
@@ -128,6 +149,8 @@ class DoubleLift(sim.Component):
 
             self.in_transit_tray_high = tray_high
             self.in_transit_tray_low = tray_low
+            self.update_rects()
+
 
             # Langste tijd want de andere lift kan geen voorsprong nemen aangezien bij het afladen
             # steeds op de andere gewacht moet worden
@@ -143,6 +166,7 @@ class DoubleLift(sim.Component):
             self.hold(travel_time)
             self.lift_high_pos.set(tray_high_lvl)
             self.lift_low_pos.set(tray_low_lvl)
+            self.update_rects()
 
             # TODO: actually pickup
             # we "pick up" the thing
@@ -156,6 +180,7 @@ class DoubleLift(sim.Component):
             self.lift_low_pos.set(-1)
             self.docked_tray = self.in_transit_tray_high
 
+            self.update_rects()
             # unloading high in picking bay
             self.hold(self.loading_time)
 
@@ -175,7 +200,7 @@ class DoubleLift(sim.Component):
             self.lift_high_pos.set(1)
             self.lift_low_pos.set(0)
             self.docked_tray = self.in_transit_tray_low
-
+            self.update_rects()
             # load bakske low
             ld_time_in = self.loading_time
             self.hold(ld_time_in)
@@ -202,6 +227,7 @@ class DoubleLift(sim.Component):
 
             self.lift_high_pos.set(tray_high_lvl)
             self.lift_low_pos.set(tray_low_lvl)
+            self.update_rects()
             self.in_transit_tray_high = None
             self.in_transit_tray_low = None
 
@@ -210,6 +236,7 @@ class DoubleLift(sim.Component):
 
             tray_one_lvl.slot_tray(self.instruction_one.tray)
             tray_two_lvl.slot_tray(self.instruction_two.tray)
+            self.update_rects()
 
             order = self.lift_high_instructions.pop(0)
             order.activate()
@@ -233,19 +260,24 @@ class DoubleLift(sim.Component):
             self.lift_low_pos.set(level.get())
             self.lift_high_pos.set(level.get() +1)
             self.in_transit_tray_low = tray
+            self.update_rects()
             self.hold(self.loading_time) # robot loading time
             hold_time = get_time(self.lift_low_pos.get(), 0, self.speed)
             self.hold(hold_time) # go down time
-            self.bay_status.set(BayStatus.READY)
+            self.lift_low_pos.set(0)
+            self.lift_high_pos.set(1)
             self.docked_tray = self.in_transit_tray_low
+            self.bay_status.set(BayStatus.READY)
             self.picker.schedule_notification(PickerNotification(self, self.lift_low_instructions[0].fetch_dict))
-
+            self.update_rects()
             self.wait((self.bay_status, BayStatus.IDLE))
             # put the tray back
             hold_time = get_time(self.lift_low_pos.get(), level.get(), self.speed)
             self.hold(hold_time)
+            self.lift_low_pos.set(level.get())
             level.slot_tray(tray)
             self.in_transit_tray_low = None
+            self.update_rects()
             self.hold(self.loading_time)  # robot loading time
 
         # Cyclus herbegint
@@ -329,4 +361,3 @@ class DoubleLift(sim.Component):
                 else:
                     to_return_items_count[item_name] = -item_count
         return to_return_items_count
-
