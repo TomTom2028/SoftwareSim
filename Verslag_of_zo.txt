@@ -44,25 +44,42 @@ een combinatie van verschillende verdelingen is.
 
 Aangezien een heel aantal intervallen rond de nul seconden lang is hebben we voorlopig enkel intervallen groter of gelijk één seconde beschouwt. Voor de grootste, OSR, 
 is de verdeling duidlijk niet poission verdeelt (*aantonen). Voor de PTL-NEST opstellingen is de verdeling wel poission (*aantonen).
-De OSR lijkt ons een realistischere verdleing voor de picker bij de VLM aangezien we steeds een zekere hoeveelheid tijd verwachten voor het picken van een item.
-Dus tenzij er twee items tegleijk genomen kunnen worden, zal het interval nooit nul zijn. En als twee items tegleijk genomen kunnen worden dan is dit iets om in de 
+De OSR lijkt ons een realistischere verdeling voor de picker bij de VLM aangezien we steeds een zekere hoeveelheid tijd verwachten voor het picken van een item. Verdere 
+analyse geeft aan dat de piek in de verdleing normaal verdeelt is. Aan de Q-Q plot kunnen we zien dat deze vaststelling alleen geld voor 
+de piek en niet voor punten verder dan 2 à 3 standaard afwijkingen van het gemiddelde. We zien hier enkele potentiele verklaringen voor. De eerste 
+verklaring is dat sommige items zwaarder zijn of dat er meerdere items tegelijk worden gepickt en dat hierdoor de picktijd iets langer is. We zien 
+echter voor beide situaties geen bewijs dat de picktijd omhoog gaat proportioneel met het gewicht of het aantal items. Hoewel dat de clustering van punten een combinatie 
+van verschillende verdelingen doet vermoeden, zien we niet hoe we deze uit elkaar zouden kunnen halen. Aangezien ongeveer 75% van de data punten binnen de normaal verdleing 
+valt vinden we het ok om binnen deze verklaring de overige 25% van de data punten te laten vallen.
+Een andere verklaring is dat een bak of een order even op zich laat wachten. 
+De opstelling van een OSR systeem doet vermoeden dat er steeds een buffer is maar als er op een moment nog geen order is en dus ook geen bak om uit te pikken kan het interval 
+hoger dan normaal oplopen. Aangezien dit niet het effect is van de picktijd en dus gemodelleerd is door andere delen van het systeem, kunnen we ook binnen deze verkalring 
+deze punten buiten beschouwing laten.
+Dus tenzij er twee items tegelijk genomen kunnen worden, zal het interval nooit nul zijn. En als twee items tegelijk genomen kunnen worden dan is dit iets om in de 
 simulatie te verwerken.
+De interval data uit de OSR 
 
 Enkel incoming houden we inrekening om niet alle intervallen tussen incoming en outgoing van dezelfde task in data te steken maar er zijn ook bizarre gevallen 
 waar enkel de één of ander in de lijst staat. Dus misschien moeten we filteren op* outgoing ipv incoming
 
 
-Verder hebben we ee nanatal vaststellingen gedaan rond de combinaties van items.
+Verder hebben we een aantal vaststellingen gedaan rond de combinaties van items.
 
 als we er van uit gaan dat item codes op items slaan en task number
 
 
+
+
 info over de data:
 Outbound order number en picklist number zijn paarsgewijs altijd hetzelfde
-Stock porduct id en item code ook
-Task number slaat op het picken van 1 soort item -> kan dus meerdere keren voorkomen maar ltijd voor hetzelfde type item. (heeft dan een verschillend sequence number)
-Location code is de "machine", parent conatienr zal de bak zijn.
-Outbound orders doet wel vermeoden dat er vaak meerdere items samen worden besteld. Er zijn +-21k paren die meer dan 30 keer voorkomen. Hoe items die meerdere 
+Stock product id en item code ook
+Task number slaat op het picken van 1 soort item -> kan dus meerdere keren voorkomen maar altijd voor hetzelfde type item. (heeft dan een verschillend sequence number)
+Location code is de "machine", parent container zal de bak zijn.
+Outbound orders doet wel vermoeden dat er vaak meerdere items samen worden besteld. Er zijn +-21k paren die meer dan 30 keer voorkomen. Hoe items die meerdere 
 keren voorkomen in dezelfde order gemodeleerd moeten worden is me nog een vraagteken.
 'Last Changed Dt' is hoogtens 0.33s later dan 'Creation Dt'
-De Inventory Qty gaan vanuit dat is "hoevveel haalt ge uit die parent container"
+De Inventory Qty gaan vanuit dat is "hoeveel haalt ge uit die parent container"
+
+
+incrementeel orde opstellen 
+Een item kiezen en dan random een van de items uit de gekozen items kiezen 
