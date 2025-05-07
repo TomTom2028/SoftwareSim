@@ -32,10 +32,11 @@ class BayStatus(Enum):
 def get_time(a, b, speed):
     return abs(a - b)/speed
 
-def time_calc(s_tot, v_max):
+def time_calc(s_tot):
     # should be part of the vlm at some point
+    v_max = 0.6
     a_max = 1
-    j_max = 3
+    j_max = 20
     shape = -1
 
     v_a = (a_max*a_max/j_max)
