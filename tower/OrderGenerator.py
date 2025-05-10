@@ -18,8 +18,6 @@ item_params_quargs = [1.16754861e+04, 4.92942725e-01, 5.77416566e+01]
 
 # proba test of the above curve
 item_counts = list(range(1, 50))
-def wrapper_exp(x):
-    return func(x, *params)
 frequencies = [item_fn(n, *item_params_quargs) for n in item_counts]
 total_orders = sum(frequencies)
 probabilities_for_amount_items = [freq / total_orders for freq in frequencies]
