@@ -83,3 +83,21 @@ De Inventory Qty gaan vanuit dat is "hoeveel haalt ge uit die parent container"
 
 incrementeel orde opstellen 
 Een item kiezen en dan random een van de items uit de gekozen items kiezen 
+
+
+Meerdere liften:
+Initieel werden elke lift een eigen instructie toegekend. Deze gingen samen hun tray gaan halen leverden de ene na de andere de tray 
+af en plaatsten ze dan samen terug weg. Echter als er meerdere items uit een tray gehaald kunnen worden, dan moet direct ook geweten 
+zijn over welke orders het gaat, want anders heeft geen zin om de volgende instructie aan de tweede lift toe te kennen als het item net 
+zo goed uit de tray van de eerste lift gehaald kan worden. Er moet dus vooruit gekeken worden naar de volgende items. Echter in onze 
+data zien we dat veel intervallen tussen gelogde pick momenten quasi nul zijn. Het lijkt ons dan ook logisch om voor items die uit 
+dezelfde tray gepickt zijn, slechts één keer de picktijd aan te rekenen. Zo komt de verdeling van de gegenereerde punten overeen 
+met de data.
+
+Deze bemerking doet ons heel het probleem verder abstraheren. De data laat geen onderscheid tussen een tray waar veel uit genomen 
+wordt en een waar weinig uit genomen wordt, op vlak van picktijd. We kennen de verdeling van het aantal items in een order. Wat is 
+de waarschijnlijkheid dat een tray nog de nodige items bevat voor een reeks instructies? De trays bevatten random verdeling aan items.
+De kans dat een item nog in een tray te vinden is, is dus dalend met de tijd, want afhankelijk van het aantal items dat er iedere keer 
+wordt uit gepickt. We zouden voor elk item een kans kunnen bijhouden dat deze nog in de tray ligt. Iedere keer als er iets uit de tray 
+wordt gepickt gaat de kans naar beneden met een zekere waarde. Deze waarde is bepaald door de kans dat een item in een order zit en 
+hoeveel van het item nodig zijn.
