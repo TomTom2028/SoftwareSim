@@ -66,3 +66,6 @@ Outbound orders doet wel vermeoden dat er vaak meerdere items samen worden beste
 keren voorkomen in dezelfde order gemodeleerd moeten worden is me nog een vraagteken.
 'Last Changed Dt' is hoogtens 0.33s later dan 'Creation Dt'
 De Inventory Qty gaan vanuit dat is "hoevveel haalt ge uit die parent container"
+
+
+Experimenten als welke eerst enzo....

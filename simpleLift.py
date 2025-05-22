@@ -1,5 +1,11 @@
 # simple shit: one floor that spawns items. the vlm takes the tray down, and takes one of the tray
+import random
+import time
+
 import salabim as sim
+
+random.seed(time.time())
+
 
 from tower.OrderGenerator import OrderGenerator
 from tower.TowerGenerator import TowerGenerator
@@ -26,7 +32,7 @@ class OrderQueuer(sim.Component):
             current_order = self.orders.pop(0)
             print("ORDER", current_order)
             self.arbiter.schedule(current_order)
-            self.hold(sim.Uniform(10, 50).sample())
+            self.hold(sim.Uniform(1, 2).sample())
             if (len(self.orders) == 0):
                 return
 
@@ -66,7 +72,7 @@ class Arbiter:
 
 
 orderGenerator = OrderGenerator()
-orders = orderGenerator.generate_pre_orders(100)
+orders = orderGenerator.generate_pre_orders(500)
 combinedItems = {}
 for order in orders:
     for item in order:
@@ -78,7 +84,8 @@ print(orders)
 print(combinedItems)
 
 env = sim.Environment(trace=True)
-person = Person("Person1")
+list_for_logging = []
+person = Person("Person1", list_for_logging, env)
 towerGenerator = TowerGenerator()
 towerOne = towerGenerator.get_tower(7, 2,  "VlmOne", 20)
 towerTwo = towerGenerator.get_tower(7, 2,  "VlmTwo", 40)
@@ -101,7 +108,8 @@ badItemDict = {}
 arbiter = Arbiter([vlmOne, vlmTwo], badItemDict)
 OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
-env.animate(True)
+
+#env.animate(True)
 
 
 
@@ -126,3 +134,29 @@ print('\n')
 vlmTwo.order_queue.length.print_histogram(30, 0, 1)
 print()
 vlmTwo.order_queue.length_of_stay.print_histogram(30, 0, 10)
+
+print("##### LARGE LOGGING LIST #####")
+#print(list_for_logging)
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Example data
+
+delta_times = []
+for i in range(1, len(list_for_logging)):
+    delta_times.append(list_for_logging[i] - list_for_logging[i-1])
+delta_times.sort()
+print(delta_times)
+
+# Create histogram
+plt.hist(delta_times, bins=60, alpha=0.7, color='blue', edgecolor='black')
+
+# Add title and labels
+plt.title("Histogram of Data")
+plt.xlabel("Value")
+plt.ylabel("Frequency")
+
+# Show plot
+plt.show()
