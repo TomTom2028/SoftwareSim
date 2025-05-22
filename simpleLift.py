@@ -85,15 +85,15 @@ print(combinedItems)
 
 env = sim.Environment(trace=True)
 list_for_logging = []
-person = Person("Person1", list_for_logging, env)
+person = Person("Person1", list_for_logging, env, 4, 20)
 towerGenerator = TowerGenerator()
 towerOne = towerGenerator.get_tower(7, 2,  "VlmOne", 20)
 towerTwo = towerGenerator.get_tower(7, 2,  "VlmTwo", 40)
 #vlmOne = Vlm(0, 1, 10, person, 0, towerOne, "VlmOne")
 #vlmTwo = Vlm(0, 1, 10, person, 10, towerTwo, "VlmTwo")
 # DER IS IETS MIS ALS VLM 1 locatie 30 is en VLM2 locatie 10
-vlmOne = DoubleLift(1, 10, person, 20, towerOne, "VlmOne")
-vlmTwo = DoubleLift(1, 10, person, 40, towerTwo, "VlmTwo")
+vlmOne = DoubleLift(1, 10, person, 4, 20, towerOne, "VlmOne")
+vlmTwo = DoubleLift(1, 10, person,8, 40, towerTwo, "VlmTwo")
 vlm_filler([
     vlmOne,
    vlmTwo
@@ -109,7 +109,7 @@ arbiter = Arbiter([vlmOne, vlmTwo], badItemDict)
 OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
 
-#env.animate(True)
+env.animate(True)
 
 
 

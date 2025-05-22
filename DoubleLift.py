@@ -11,7 +11,7 @@ from VLM import *
 
 
 class DoubleLift(sim.Component):
-    def __init__(self, speed, loading_time, picker, location, levels: [Level], vlm_name):
+    def __init__(self, speed, loading_time, picker, location, gui_location, levels: [Level], vlm_name):
         super().__init__()
 
         self.vlm_name = vlm_name
@@ -25,6 +25,7 @@ class DoubleLift(sim.Component):
         self.speed = speed
         self.picker = picker
         self.location = location
+        self.gui_location = gui_location
 
         self.bay_status = sim.State(f'{vlm_name}_bay', value=BayStatus.IDLE)
         self.order_queue = sim.Queue(f'{vlm_name}_orderQueue')
@@ -43,7 +44,7 @@ class DoubleLift(sim.Component):
 
         self.instruction_queue = sim.Queue(f'{vlm_name}_instruction_queue')
         self.docked_tray: Tray = None
-        self.rect = sim.AnimateRectangle(spec=((self.location - VLMTHICKNESS / 2) * MULTIPLIER, BASE_Y, (self.location + VLMTHICKNESS / 2) * MULTIPLIER, len(self.levels) * LAYERHEIGHT + BASE_Y), fillcolor="blue" ,text=self.vlm_name, layer=0)
+        self.rect = sim.AnimateRectangle(spec=((self.gui_location - VLMTHICKNESS / 2) * MULTIPLIER, BASE_Y, (self.gui_location + VLMTHICKNESS / 2) * MULTIPLIER, len(self.levels) * LAYERHEIGHT + BASE_Y), fillcolor="blue" ,text=self.vlm_name, layer=0)
         self._rect_height = None
         self._rect_low = None
 
@@ -53,8 +54,8 @@ class DoubleLift(sim.Component):
         if self._rect_low is not None:
             self._rect_low.remove()
         self._rect_height = sim.AnimateRectangle(
-            spec=((self.location - VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_high_pos.get() + 1) * LAYERHEIGHT, (self.location + VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_high_pos.get() + 2) * LAYERHEIGHT), fillcolor="green", layer=-1, text=self.in_transit_tray_high.tray_name if self.in_transit_tray_high is not None else "None")
-        self._rect_low = sim.AnimateRectangle(spec=((self.location - VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_low_pos.get() + 1) * LAYERHEIGHT, (self.location + VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_low_pos.get() + 2) * LAYERHEIGHT), fillcolor="green", layer=-1, text=self.in_transit_tray_low.tray_name if self.in_transit_tray_low is not None else "None")
+            spec=((self.gui_location - VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_high_pos.get() + 1) * LAYERHEIGHT, (self.gui_location + VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_high_pos.get() + 2) * LAYERHEIGHT), fillcolor="green", layer=-1, text=self.in_transit_tray_high.tray_name if self.in_transit_tray_high is not None else "None")
+        self._rect_low = sim.AnimateRectangle(spec=((self.gui_location - VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_low_pos.get() + 1) * LAYERHEIGHT, (self.gui_location + VLMTHICKNESS / 2) * MULTIPLIER, (self.lift_low_pos.get() + 2) * LAYERHEIGHT), fillcolor="green", layer=-1, text=self.in_transit_tray_low.tray_name if self.in_transit_tray_low is not None else "None")
         self._rect_height.show()
         self._rect_low.show()
 

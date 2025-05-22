@@ -67,5 +67,11 @@ keren voorkomen in dezelfde order gemodeleerd moeten worden is me nog een vraagt
 'Last Changed Dt' is hoogtens 0.33s later dan 'Creation Dt'
 De Inventory Qty gaan vanuit dat is "hoevveel haalt ge uit die parent container"
 
+TODO: haal negatieve item bug eruit!!
 
 Experimenten als welke eerst enzo....
+Pas de GUI aan zodat duidleijk is als trays "aan het wachten zijn op een picker!!"
+De lift geen 7 meter hoog maken!!!!!!! <---
+Manneken in de gui duidelijk maken als hij stapt
+Zet de lifen geen 40 meter uit elkaar
+lift travel time erin steken
