@@ -29,10 +29,12 @@ class BayStatus(Enum):
     READY = "READY"
 
 
-def get_time(a, b, speed):
-    return time_calc(abs(a - b))
+def get_time(a, b, speed=None):
+    return time_calc(a - b)
     #return 0
     #return abs(a - b)/speed
+def get_time(delta, speed=None):
+    return time_calc(abs(delta))
 
 def time_calc(s_tot):
     # should be part of the vlm at some point

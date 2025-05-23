@@ -23,6 +23,10 @@ class Person(sim.Component):
             fillcolor="purple" if self.is_walking else "orange", layer=-2, text=self.person_name)
         self.rect.show()
 
+
+    def get_person_walking_time(self, delta):
+        return abs(delta) * 0.5
+
     def process(self):
         while True:
             while len(self.notification_queue) == 0:
@@ -31,7 +35,7 @@ class Person(sim.Component):
             goto_vlm = current_notification.vlm
             self.is_walking = True
             self.update_rect()
-            self.hold(get_time(self.current_location, goto_vlm.location, 0.5))
+            self.hold(self.get_person_walking_time(self.current_location - goto_vlm.location))
             self.current_location = goto_vlm.location
             self.current_gui_location = goto_vlm.gui_location
             self.is_walking = False

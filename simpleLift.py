@@ -109,7 +109,7 @@ arbiter = Arbiter([vlmOne, vlmTwo], badItemDict)
 OrderQueuer([vlmOne, vlmTwo], 2, arbiter, orders)
 
 
-env.animate(True)
+#env.animate(True)
 
 
 

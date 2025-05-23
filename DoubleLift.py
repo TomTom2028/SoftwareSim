@@ -162,9 +162,8 @@ class DoubleLift(sim.Component):
             else:
                 delta = abs(self.lift_high_pos.get() - tray_high_lvl)
 
-            travel_time = delta / self.speed
             # Verplaats naar de bestemmingen
-            self.hold(travel_time)
+            self.hold(get_time(delta))
             self.lift_high_pos.set(tray_high_lvl)
             self.lift_low_pos.set(tray_low_lvl)
             self.update_rects()
@@ -176,7 +175,7 @@ class DoubleLift(sim.Component):
             # Naar pickingstation
             # hoogste zal altijd langste tijd moeten afleggen.
             self.state = sim.State("Action", value="Delivery")
-            self.hold(tray_high_lvl / self.speed)
+            self.hold(get_time(tray_high_lvl))
             self.lift_high_pos.set(0)
             self.lift_low_pos.set(-1)
             self.docked_tray = self.in_transit_tray_high
@@ -197,7 +196,7 @@ class DoubleLift(sim.Component):
 
             # verplaatsen low en high 1 naar boven
             self.state = sim.State("Action", value="Delivery")
-            self.hold(1 / self.speed)
+            self.hold(get_time(1))
             self.lift_high_pos.set(1)
             self.lift_low_pos.set(0)
             self.docked_tray = self.in_transit_tray_low
@@ -222,9 +221,9 @@ class DoubleLift(sim.Component):
             # Ook hier heeft het geen zin om voorsprong tenemen we wachten sws op de onderste lift.
             if ld_time_out + ld_time_in + tray_low_lvl / self.speed > (
                     tray_high_lvl - 1) / self.speed:
-                self.hold(tray_low_lvl / self.speed)  # starts from 0
+                self.hold(get_time(tray_low_lvl))  # starts from 0
             else:
-                self.hold((tray_high_lvl - 1) / self.speed)
+                self.hold(get_time(tray_high_lvl))
 
             self.lift_high_pos.set(tray_high_lvl)
             self.lift_low_pos.set(tray_low_lvl)
@@ -254,7 +253,7 @@ class DoubleLift(sim.Component):
             if level is None:
                 raise ValueError("In this iteration of the program the bay should be put back!")
             # go to the tray
-            hold_time = get_time(self.lift_low_pos.get(), level.get(), self.speed)
+            hold_time = get_time(self.lift_low_pos.get(), level.get())
             self.hold(hold_time)
             level.get_tray(tray.tray_name)
 
@@ -263,7 +262,7 @@ class DoubleLift(sim.Component):
             self.in_transit_tray_low = tray
             self.update_rects()
             self.hold(self.loading_time) # robot loading time
-            hold_time = get_time(self.lift_low_pos.get(), 0, self.speed)
+            hold_time = get_time(self.lift_low_pos.get(), 0)
             self.hold(hold_time) # go down time
             self.lift_low_pos.set(0)
             self.lift_high_pos.set(1)
@@ -273,7 +272,7 @@ class DoubleLift(sim.Component):
             self.update_rects()
             self.wait((self.bay_status, BayStatus.IDLE))
             # put the tray back
-            hold_time = get_time(self.lift_low_pos.get(), level.get(), self.speed)
+            hold_time = get_time(self.lift_low_pos.get(), level.get())
             self.hold(hold_time)
             self.lift_low_pos.set(level.get())
             level.slot_tray(tray)
