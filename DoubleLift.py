@@ -14,6 +14,8 @@ class DoubleLift(sim.Component):
     def __init__(self, speed, loading_time, picker, location, gui_location, levels: [Level], vlm_name):
         super().__init__()
 
+        self.all_tray_list = []
+
         self.vlm_name = vlm_name
 
         self.lift_high_instructions = []
@@ -32,6 +34,10 @@ class DoubleLift(sim.Component):
         
 
         self.levels = levels
+        for level in self.levels:
+            for bay in level.bays:
+                if bay.tray is not None:
+                    self.all_tray_list.append(bay.tray)
         self.high_in_transit_tray: None or Tray = None
         self.low_in_transit_tray: None or Tray = None
 
@@ -224,6 +230,7 @@ class DoubleLift(sim.Component):
                 self.hold(get_time(tray_low_lvl))  # starts from 0
             else:
                 self.hold(get_time(tray_high_lvl))
+            self.docked_tray = None
 
             self.lift_high_pos.set(tray_high_lvl)
             self.lift_low_pos.set(tray_low_lvl)
@@ -277,6 +284,7 @@ class DoubleLift(sim.Component):
             self.lift_low_pos.set(level.get())
             level.slot_tray(tray)
             self.in_transit_tray_low = None
+            self.docked_tray =None
             self.update_rects()
             self.hold(self.loading_time)  # robot loading time
 
@@ -326,6 +334,7 @@ class DoubleLift(sim.Component):
 
 
     def get_all_trays(self):
+        return self.all_tray_list
         trays = []
         for level in self.levels:
             for bay in level.bays:
