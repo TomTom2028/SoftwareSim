@@ -39,6 +39,7 @@ def get_time(delta, speed=None):
 def time_calc(s_tot):
     s_tot = s_tot * 0.125
     # should be part of the vlm at some point
+    v_max = 0.6
     a_max = 1
     j_max = 20
     shape = -1
