@@ -96,7 +96,7 @@ vlmOne = DoubleLift(1, 4.8, person, 4, 20, towerOne, "VlmOne")
 vlmTwo = DoubleLift(1, 4.8, person,8, 40, towerTwo, "VlmTwo")
 vlm_filler([
     vlmOne,
-#   vlmTwo
+   vlmTwo
 ])
 # print the items in the system
 print("ITEMS IN SYSTEM")
