@@ -11,7 +11,7 @@ from VLM import *
 
 
 class DoubleLift(sim.Component):
-    def __init__(self, speed, loading_time, picker, location, gui_location, levels: [Level], vlm_name):
+    def __init__(self, loading_time, picker, location, gui_location, levels: [Level], vlm_name):
         super().__init__()
 
         self.all_tray_list = []
@@ -24,7 +24,6 @@ class DoubleLift(sim.Component):
 
         self.state = sim.State("Action", value="Waiting")
         self.loading_time = loading_time
-        self.speed = speed
         self.picker = picker
         self.location = location
         self.gui_location = gui_location
@@ -225,8 +224,8 @@ class DoubleLift(sim.Component):
 
             # Als het langer duurt voor de onderste op locatie te komen dan wachten we daar op anders wachten we op de bovenste.
             # Ook hier heeft het geen zin om voorsprong tenemen we wachten sws op de onderste lift.
-            if ld_time_out + ld_time_in + tray_low_lvl / self.speed > (
-                    tray_high_lvl - 1) / self.speed:
+            if ld_time_out + ld_time_in + get_time(tray_low_lvl) > get_time(
+                    tray_high_lvl - 1):
                 self.hold(get_time(tray_low_lvl))  # starts from 0
             else:
                 self.hold(get_time(tray_high_lvl))

@@ -30,7 +30,7 @@ class BayStatus(Enum):
 
 
 def get_time(a, b, speed=None):
-    return time_calc(a - b)
+    return time_calc(abs(a - b))
     #return 0
     #return abs(a - b)/speed
 def get_time(delta, speed=None):
