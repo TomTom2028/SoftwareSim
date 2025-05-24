@@ -14,6 +14,8 @@ class DoubleLift(sim.Component):
     def __init__(self, speed, loading_time, picker, location, gui_location, levels: [Level], vlm_name):
         super().__init__()
 
+        self.one_lift_mode = True
+
         self.all_tray_list = []
 
         self.vlm_name = vlm_name
@@ -126,7 +128,7 @@ class DoubleLift(sim.Component):
     # TODO: make it so that a instruction can come from a lift on this order
     # a mock verison of this fn is below
     def process_instructionqueue_TOFIX(self):
-        if (len(self.instruction_queue) > 1):
+        if (len(self.instruction_queue) > 1 and not self.one_lift_mode):
             self.state = sim.State("Action", value="Fetching")
             self.instruction_one = self.instruction_queue.pop() # instruction_queue.pop()
             self.instruction_two = self.instruction_queue.pop() #instruction_queue.pop()
@@ -250,7 +252,7 @@ class DoubleLift(sim.Component):
             order = self.lift_low_instructions.pop(0)
             order.activate()
 
-        elif len(self.instruction_queue) == 1:
+        elif len(self.instruction_queue) == 1 or (self.one_lift_mode and len(self.instruction_queue) > 0):
             #tray, item, amount_to_take = self.get_tray_for_part_of_order(self.current_order)
             self.instruction_one = self.instruction_queue.pop()
             self.lift_low_instructions.append(self.instruction_one)
@@ -273,11 +275,13 @@ class DoubleLift(sim.Component):
             self.hold(hold_time) # go down time
             self.lift_low_pos.set(0)
             self.lift_high_pos.set(1)
+            self.hold(self.loading_time) # dock time
             self.docked_tray = self.in_transit_tray_low
             self.bay_status.set(BayStatus.READY)
             self.picker.schedule_notification(PickerNotification(self, self.lift_low_instructions[0].fetch_dict))
             self.update_rects()
             self.wait((self.bay_status, BayStatus.IDLE))
+            self.hold(self.loading_time) # undock time
             # put the tray back
             hold_time = get_time(self.lift_low_pos.get(), level.get())
             self.hold(hold_time)
