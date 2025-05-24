@@ -44,25 +44,38 @@ een combinatie van verschillende verdelingen is.
 
 Aangezien een heel aantal intervallen rond de nul seconden lang is hebben we voorlopig enkel intervallen groter of gelijk één seconde beschouwt. Voor de grootste, OSR, 
 is de verdeling duidlijk niet poission verdeelt (*aantonen). Voor de PTL-NEST opstellingen is de verdeling wel poission (*aantonen).
-De OSR lijkt ons een realistischere verdleing voor de picker bij de VLM aangezien we steeds een zekere hoeveelheid tijd verwachten voor het picken van een item.
-Dus tenzij er twee items tegleijk genomen kunnen worden, zal het interval nooit nul zijn. En als twee items tegleijk genomen kunnen worden dan is dit iets om in de 
+De OSR lijkt ons een realistischere verdeling voor de picker bij de VLM aangezien we steeds een zekere hoeveelheid tijd verwachten voor het picken van een item. Verdere 
+analyse geeft aan dat de piek in de verdleing normaal verdeelt is. Aan de Q-Q plot kunnen we zien dat deze vaststelling alleen geld voor 
+de piek en niet voor punten verder dan 2 à 3 standaard afwijkingen van het gemiddelde. We zien hier enkele potentiele verklaringen voor. De eerste 
+verklaring is dat sommige items zwaarder zijn of dat er meerdere items tegelijk worden gepickt en dat hierdoor de picktijd iets langer is. We zien 
+echter voor beide situaties geen bewijs dat de picktijd omhoog gaat proportioneel met het gewicht of het aantal items. Hoewel dat de clustering van punten een combinatie 
+van verschillende verdelingen doet vermoeden, zien we niet hoe we deze uit elkaar zouden kunnen halen. Aangezien ongeveer 75% van de data punten binnen de normaal verdleing 
+valt vinden we het ok om binnen deze verklaring de overige 25% van de data punten te laten vallen.
+Een andere verklaring is dat een bak of een order even op zich laat wachten. 
+De opstelling van een OSR systeem doet vermoeden dat er steeds een buffer is maar als er op een moment nog geen order is en dus ook geen bak om uit te pikken kan het interval 
+hoger dan normaal oplopen. Aangezien dit niet het effect is van de picktijd en dus gemodelleerd is door andere delen van het systeem, kunnen we ook binnen deze verkalring 
+deze punten buiten beschouwing laten.
+Dus tenzij er twee items tegelijk genomen kunnen worden, zal het interval nooit nul zijn. En als twee items tegelijk genomen kunnen worden dan is dit iets om in de 
 simulatie te verwerken.
+De interval data uit de OSR 
 
 Enkel incoming houden we inrekening om niet alle intervallen tussen incoming en outgoing van dezelfde task in data te steken maar er zijn ook bizarre gevallen 
 waar enkel de één of ander in de lijst staat. Dus misschien moeten we filteren op* outgoing ipv incoming
 
 
-Verder hebben we ee nanatal vaststellingen gedaan rond de combinaties van items.
+Verder hebben we een aantal vaststellingen gedaan rond de combinaties van items.
 
 als we er van uit gaan dat item codes op items slaan en task number
 
 
+
+
 info over de data:
 Outbound order number en picklist number zijn paarsgewijs altijd hetzelfde
-Stock porduct id en item code ook
-Task number slaat op het picken van 1 soort item -> kan dus meerdere keren voorkomen maar ltijd voor hetzelfde type item. (heeft dan een verschillend sequence number)
-Location code is de "machine", parent conatienr zal de bak zijn.
-Outbound orders doet wel vermeoden dat er vaak meerdere items samen worden besteld. Er zijn +-21k paren die meer dan 30 keer voorkomen. Hoe items die meerdere 
+Stock product id en item code ook
+Task number slaat op het picken van 1 soort item -> kan dus meerdere keren voorkomen maar altijd voor hetzelfde type item. (heeft dan een verschillend sequence number)
+Location code is de "machine", parent container zal de bak zijn.
+Outbound orders doet wel vermoeden dat er vaak meerdere items samen worden besteld. Er zijn +-21k paren die meer dan 30 keer voorkomen. Hoe items die meerdere 
 keren voorkomen in dezelfde order gemodeleerd moeten worden is me nog een vraagteken.
 'Last Changed Dt' is hoogtens 0.33s later dan 'Creation Dt'
 De Inventory Qty gaan vanuit dat is "hoevveel haalt ge uit die parent container"
@@ -75,3 +88,26 @@ De lift geen 7 meter hoog maken!!!!!!! <---
 Manneken in de gui duidelijk maken als hij stapt
 Zet de lifen geen 40 meter uit elkaar
 lift travel time erin steken
+De Inventory Qty gaan vanuit dat is "hoeveel haalt ge uit die parent container"
+
+
+incrementeel orde opstellen 
+Een item kiezen en dan random een van de items uit de gekozen items kiezen 
+
+
+Meerdere liften:
+Initieel werden elke lift een eigen instructie toegekend. Deze gingen samen hun tray gaan halen leverden de ene na de andere de tray 
+af en plaatsten ze dan samen terug weg. Echter als er meerdere items uit een tray gehaald kunnen worden, dan moet direct ook geweten 
+zijn over welke orders het gaat, want anders heeft geen zin om de volgende instructie aan de tweede lift toe te kennen als het item net 
+zo goed uit de tray van de eerste lift gehaald kan worden. Er moet dus vooruit gekeken worden naar de volgende items. Echter in onze 
+data zien we dat veel intervallen tussen gelogde pick momenten quasi nul zijn. Het lijkt ons dan ook logisch om voor items die uit 
+dezelfde tray gepickt zijn, slechts één keer de picktijd aan te rekenen. Zo komt de verdeling van de gegenereerde punten overeen 
+met de data.
+
+Deze bemerking doet ons heel het probleem verder abstraheren. De data laat geen onderscheid tussen een tray waar veel uit genomen 
+wordt en een waar weinig uit genomen wordt, op vlak van picktijd. We kennen de verdeling van het aantal items in een order. Wat is 
+de waarschijnlijkheid dat een tray nog de nodige items bevat voor een reeks instructies? De trays bevatten random verdeling aan items.
+De kans dat een item nog in een tray te vinden is, is dus dalend met de tijd, want afhankelijk van het aantal items dat er iedere keer 
+wordt uit gepickt. We zouden voor elk item een kans kunnen bijhouden dat deze nog in de tray ligt. Iedere keer als er iets uit de tray 
+wordt gepickt gaat de kans naar beneden met een zekere waarde. Deze waarde is bepaald door de kans dat een item in een order zit en 
+hoeveel van het item nodig zijn.

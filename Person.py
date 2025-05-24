@@ -35,7 +35,7 @@ class Person(sim.Component):
             goto_vlm = current_notification.vlm
             self.is_walking = True
             self.update_rect()
-            self.hold(self.get_person_walking_time(self.current_location - goto_vlm.location))
+            self.hold(self.get_walk_time(self.current_location, goto_vlm.location))
             self.current_location = goto_vlm.location
             self.current_gui_location = goto_vlm.gui_location
             self.is_walking = False
@@ -54,6 +54,10 @@ class Person(sim.Component):
 
     def schedule_notification(self, notification):
         notification.enter(self.notification_queue)
+    
+    def get_walk_time(self, position, destination):
+        speed = sim.Normal(1.39, 0.07).sample() #5km/h en 0.25km/h in m/s
+        return abs(position - destination)/speed
 
 class PickerNotification(sim.Component):
     def __init__(self, vlm, to_pick_items):
