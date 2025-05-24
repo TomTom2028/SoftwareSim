@@ -88,7 +88,7 @@ list_for_logging = []
 person = Person("Person1", list_for_logging, env, 4, 20)
 towerGenerator = TowerGenerator()
 towerOne = towerGenerator.get_tower(9, 2,  "VlmOne", 20)
-towerTwo = towerGenerator.get_tower(7, 2,  "VlmTwo", 40)
+towerTwo = towerGenerator.get_tower(9, 2,  "VlmTwo", 40)
 #vlmOne = Vlm(0, 1, 10, person, 0, towerOne, "VlmOne")
 #vlmTwo = Vlm(0, 1, 10, person, 10, towerTwo, "VlmTwo")
 # DER IS IETS MIS ALS VLM 1 locatie 30 is en VLM2 locatie 10
@@ -96,7 +96,7 @@ vlmOne = DoubleLift(1, 4.8, person, 4, 20, towerOne, "VlmOne")
 vlmTwo = DoubleLift(1, 4.8, person,8, 40, towerTwo, "VlmTwo")
 vlm_filler([
     vlmOne,
-#   vlmTwo
+   vlmTwo
 ])
 # print the items in the system
 print("ITEMS IN SYSTEM")
@@ -153,6 +153,11 @@ for i in range(1, len(list_for_logging)):
     delta_times.append(list_for_logging[i] - list_for_logging[i-1])
 delta_times.sort()
 print(delta_times)
+per_second_times = [1/d_t for d_t in delta_times if d_t != 0]  # Avoid division by zero
+# average time per second
+average_time_per_second = np.mean(per_second_times)
+average_time_per_hour = average_time_per_second * 3600
+print(f"Average amount of processed items per hour: {average_time_per_hour:.2f}")
 
 # Create histogram
 plt.hist(delta_times, bins=60, alpha=0.7, color='blue', edgecolor='black')
