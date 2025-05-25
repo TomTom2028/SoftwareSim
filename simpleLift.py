@@ -170,7 +170,7 @@ def old_main():
 
 
 
-def run_test():
+def run_test(has_two_vlms, one_lift_mode):
     order_generator = OrderGenerator()
     orders = order_generator.generate_pre_orders(500)
     combined_items = {}
@@ -185,27 +185,46 @@ def run_test():
     person = Person("Person1", list_for_logging, env, 4, 20)
     tower_generator = TowerGenerator()
     tower_one = tower_generator.get_tower(9, 2, "VlmOne", 20)
-    tower_two = tower_generator.get_tower(9, 2, "VlmTwo", 40)
-    vlm_one = DoubleLift(4.8, person, 4, 20, tower_one, "VlmOne")
-    vlm_two = DoubleLift(4.8, person, 8, 40, tower_two, "VlmTwo")
-    vlm_filler([
-        vlm_one,
-        vlm_two
-    ])
+    tower_two = None
+    vlm_two = None
+    if has_two_vlms:
+        tower_two = tower_generator.get_tower(9, 2, "VlmTwo", 40)
+    vlm_one = DoubleLift(4.8, person, 4, 20, tower_one, "VlmOne", one_lift_mode=one_lift_mode)
+    if has_two_vlms:
+        vlm_two = DoubleLift(4.8, person, 8, 40, tower_two, "VlmTwo", one_lift_mode=one_lift_mode)
+    if has_two_vlms:
+        vlm_filler([
+            vlm_one,
+            vlm_two
+        ])
+    else:
+        vlm_filler([vlm_one])
+
     # print the items in the system
     print("ITEMS IN SYSTEM")
     print(vlm_one.get_corrected_items_count())
-    print(vlm_two.get_corrected_items_count())
+    if has_two_vlms:
+        print(vlm_two.get_corrected_items_count())
     bad_item_dict = {}
-    arbiter = Arbiter([vlm_one, vlm_two], bad_item_dict)
-    order_queuer = OrderQueuer([vlm_one, vlm_two], 2, arbiter, orders)
+    arbiter = None
+    if has_two_vlms:
+        arbiter = Arbiter([vlm_one, vlm_two], bad_item_dict)
+    else:
+        arbiter = Arbiter([vlm_one], bad_item_dict)
+    if has_two_vlms:
+        order_queuer = OrderQueuer([vlm_one, vlm_two], 2, arbiter, orders)
+    else:
+        order_queuer = OrderQueuer([vlm_one], 2, arbiter, orders)
     env.run(till=1000000)
-    print(f"Length of order queues: {len(vlm_one.order_queue)} {len(vlm_two.order_queue)}")
+    if has_two_vlms:
+        print(f"Length of order queues: {len(vlm_one.order_queue)} {len(vlm_two.order_queue)}")
+    else:
+        print(f"Length of order queues: {len(vlm_one.order_queue)}")
     for order in vlm_one.order_queue:
         print(f"VlmOne: {order.order_items}")
-
-    for order in vlm_two.order_queue:
-        print(f"VlmTwo: {order.order_items}")
+    if has_two_vlms:
+        for order in vlm_two.order_queue:
+            print(f"VlmTwo: {order.order_items}")
 
     print("Total amount of items not in the system: ")
     print(bad_item_dict)
@@ -215,27 +234,60 @@ def run_test():
     return delta_times
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
-def run_parallel_tests():
+
+
+class TestCase(Enum):
+    ONE_VLM_ONE_LIFT = (False, True, "One VLM, One Lift")
+    ONE_VLM_TWO_LIFTS = (False, False, "One VLM, Two Lifts")
+    TWO_VLMS_ONE_LIFT = (True, True, "Two VLMS, One Lift")
+    TWO_VLMS_TWO_LIFTS = (True, False, "Two VLMS, Two Lifts")
+
+def run_parallel_tests(testcase: TestCase):
     total_delta_times = []
-    with ProcessPoolExecutor() as executor:
-        futures = [executor.submit(run_test) for _ in range(80)]
+    two_vlms, one_lift_mode, description = testcase.value
+    with ProcessPoolExecutor(max_workers=12) as executor:
+        futures = [executor.submit(run_test, two_vlms, one_lift_mode) for _ in range(250)]
         for future in as_completed(futures):
             total_delta_times += future.result()
     total_delta_times.sort()
     return total_delta_times
 
-
+import numpy as np
+import matplotlib.pyplot as plt
+import json
 if __name__ == '__main__':
     freeze_support()
+    for case in TestCase:
+        name = case.value[2]
+        print(f"Running test case: {name}")
+        totalDeltaTimes = run_parallel_tests(case)
+        print(f"Test case {name} completed with {len(totalDeltaTimes)} delta times.")
+        # Print the average time per hour
+        average_items_per_hour = None
+        if len(totalDeltaTimes) > 0:
+            average_time_per_second = np.mean(totalDeltaTimes)
+            average_items_per_second = 1 / average_time_per_second if average_time_per_second > 0 else 0
+            average_items_per_hour = average_items_per_second * 3600
+            print(f"Average amount of processed items per hour for {name}: {average_items_per_hour:.2f}")
+        else:
+            average_items_per_hour = None
+            print(f"No delta times recorded for {name}.")
+        # json output
+        json_blob = {
+            "name": name,
+            "delta_times": totalDeltaTimes,
+            "average_items_per_hour": average_items_per_hour
+        }
+        with open(f"{name.replace(' ', '_').lower()}.json", 'w') as f:
+            json.dump(json_blob, f, indent=4)
+        # Create histogram
+        plt.hist(totalDeltaTimes, bins=60, alpha=0.7, color='blue', edgecolor='black')
+        # Add title and labels
+        plt.title(f"Histogram of Delta Times for {name}")
+        plt.xlabel("Delta Time (seconds)")
+        plt.ylabel("Frequency")
+        # plot to file
+        plt.savefig(f"{name.replace(' ', '_').replace(',', '').lower()}.png")
+        plt.close()  # Close the current figure
 
-    totalDeltaTimes = run_parallel_tests()
-    import numpy as np
-    import matplotlib.pyplot as plt
-    # Create histogram
-    plt.hist(totalDeltaTimes, bins=60, alpha=0.7, color='blue', edgecolor='black')
-    # Add title and labels
-    plt.title("Histogram of Data")
-    plt.xlabel("Value")
-    plt.ylabel("Frequency")
-    # Show plot
-    plt.show()
+

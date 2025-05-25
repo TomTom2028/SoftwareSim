@@ -11,10 +11,10 @@ from VLM import *
 
 
 class DoubleLift(sim.Component):
-    def __init__(self, loading_time, picker, location, gui_location, levels: [Level], vlm_name):
+    def __init__(self, loading_time, picker, location, gui_location, levels: [Level], vlm_name, one_lift_mode = False):
         super().__init__()
 
-        self.one_lift_mode = True
+        self.one_lift_mode = one_lift_mode
 
         self.all_tray_list = []
 
