@@ -111,3 +111,7 @@ De kans dat een item nog in een tray te vinden is, is dus dalend met de tijd, wa
 wordt uit gepickt. We zouden voor elk item een kans kunnen bijhouden dat deze nog in de tray ligt. Iedere keer als er iets uit de tray 
 wordt gepickt gaat de kans naar beneden met een zekere waarde. Deze waarde is bepaald door de kans dat een item in een order zit en 
 hoeveel van het item nodig zijn.
+
+
+We willen ook nog proberen om te kijken wanneer plateaut de verbetering? (aantal vlms. duplciaten van dezelfde vlms!)
+arbiter: order van vlms randomizen

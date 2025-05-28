@@ -23,10 +23,6 @@ class Person(sim.Component):
             fillcolor="purple" if self.is_walking else "orange", layer=-2, text=self.person_name)
         self.rect.show()
 
-
-    def get_person_walking_time(self, delta):
-        return abs(delta) * 0.5
-
     def process(self):
         while True:
             while len(self.notification_queue) == 0:

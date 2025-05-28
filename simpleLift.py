@@ -170,7 +170,7 @@ def old_main():
 
 
 
-def run_test(has_two_vlms, one_lift_mode):
+def run_test(has_two_vlms, one_lift_mode, distance_between_vlms=4):
     order_generator = OrderGenerator()
     orders = order_generator.generate_pre_orders(500)
     combined_items = {}
@@ -191,7 +191,7 @@ def run_test(has_two_vlms, one_lift_mode):
         tower_two = tower_generator.get_tower(9, 2, "VlmTwo", 40)
     vlm_one = DoubleLift(4.8, person, 4, 20, tower_one, "VlmOne", one_lift_mode=one_lift_mode)
     if has_two_vlms:
-        vlm_two = DoubleLift(4.8, person, 8, 40, tower_two, "VlmTwo", one_lift_mode=one_lift_mode)
+        vlm_two = DoubleLift(4.8, person, 4 +distance_between_vlms, 40, tower_two, "VlmTwo", one_lift_mode=one_lift_mode)
     if has_two_vlms:
         vlm_filler([
             vlm_one,
@@ -235,18 +235,33 @@ def run_test(has_two_vlms, one_lift_mode):
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+ONE_VLM_ONE_LIFT = (False, True, "One VLM, One Lift")
+ONE_VLM_TWO_LIFTS = (False, False, "One VLM, Two Lifts")
+TWO_VLMS_ONE_LIFT = (True, True, "Two VLMS, One Lift")
+TWO_VLMS_TWO_LIFTS = (True, False, "Two VLMS, Two Lifts")
 
-class TestCase(Enum):
-    ONE_VLM_ONE_LIFT = (False, True, "One VLM, One Lift")
-    ONE_VLM_TWO_LIFTS = (False, False, "One VLM, Two Lifts")
-    TWO_VLMS_ONE_LIFT = (True, True, "Two VLMS, One Lift")
-    TWO_VLMS_TWO_LIFTS = (True, False, "Two VLMS, Two Lifts")
+class TestCase:
+    def __init__(self, has_two_vlms, one_lift_mode, name, distance_between_vlms=4.0):
+        self.has_two_vlms = has_two_vlms
+        self.one_lift_mode = one_lift_mode
+        self.distance_between_vlms = distance_between_vlms
+        self.name = name
+
+all_testcass = [
+    TestCase(*ONE_VLM_ONE_LIFT),
+    TestCase(*ONE_VLM_TWO_LIFTS),
+    TestCase(*TWO_VLMS_ONE_LIFT),
+]
+
+
+
 
 def run_parallel_tests(testcase: TestCase):
     total_delta_times = []
-    two_vlms, one_lift_mode, description = testcase.value
-    with ProcessPoolExecutor(max_workers=12) as executor:
-        futures = [executor.submit(run_test, two_vlms, one_lift_mode) for _ in range(250)]
+    two_vlms, one_lift_mode, description = testcase.has_two_vlms, testcase.one_lift_mode, testcase.name
+    distance_between_vlms = testcase.distance_between_vlms
+    with ProcessPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(run_test, two_vlms, one_lift_mode, distance_between_vlms) for _ in range(20)]
         for future in as_completed(futures):
             total_delta_times += future.result()
     total_delta_times.sort()
@@ -255,39 +270,71 @@ def run_parallel_tests(testcase: TestCase):
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-if __name__ == '__main__':
-    freeze_support()
-    for case in TestCase:
-        name = case.value[2]
-        print(f"Running test case: {name}")
-        totalDeltaTimes = run_parallel_tests(case)
-        print(f"Test case {name} completed with {len(totalDeltaTimes)} delta times.")
-        # Print the average time per hour
-        average_items_per_hour = None
-        if len(totalDeltaTimes) > 0:
-            average_time_per_second = np.mean(totalDeltaTimes)
-            average_items_per_second = 1 / average_time_per_second if average_time_per_second > 0 else 0
-            average_items_per_hour = average_items_per_second * 3600
-            print(f"Average amount of processed items per hour for {name}: {average_items_per_hour:.2f}")
-        else:
+def runNormalTestCases():
+    if __name__ == '__main__':
+        freeze_support()
+        for case in all_testcass:
+            name = case.name
+            print(f"Running test case: {name}")
+            totalDeltaTimes = run_parallel_tests(case)
+            print(f"Test case {name} completed with {len(totalDeltaTimes)} delta times.")
+            # Print the average time per hour
             average_items_per_hour = None
-            print(f"No delta times recorded for {name}.")
-        # json output
+            if len(totalDeltaTimes) > 0:
+                average_time_per_second = np.mean(totalDeltaTimes)
+                average_items_per_second = 1 / average_time_per_second if average_time_per_second > 0 else 0
+                average_items_per_hour = average_items_per_second * 3600
+                print(f"Average amount of processed items per hour for {name}: {average_items_per_hour:.2f}")
+            else:
+                average_items_per_hour = None
+                print(f"No delta times recorded for {name}.")
+            # json output
+            json_blob = {
+                "name": name,
+                "delta_times": totalDeltaTimes,
+                "average_items_per_hour": average_items_per_hour
+            }
+            with open(f"{name.replace(' ', '_').lower()}.json", 'w') as f:
+                json.dump(json_blob, f, indent=4)
+            # Create histogram
+            plt.hist(totalDeltaTimes, bins=60, alpha=0.7, color='blue', edgecolor='black')
+            # Add title and labels
+            plt.title(f"Histogram of Delta Times for {name}")
+            plt.xlabel("Delta Time (seconds)")
+            plt.ylabel("Frequency")
+            # plot to file
+            plt.savefig(f"{name.replace(' ', '_').replace(',', '').lower()}.png")
+            plt.close()  # Close the current figure
+
+
+
+
+def runDistanceTestCases():
+    if __name__ == '__main__':
+        freeze_support()
+        x_values = []
+        y_values = []
+        for distance in np.arange(2, 20, 0.5):
+            #case = TestCase(True, False, f"Two VLMS, Two Lifts, Distance {distance}", distance)
+            case = TestCase(True, True, f"Two VLMS, One Lift, Distance {distance}", distance)
+            print(f"Running test case: {case.name}")
+            x_values.append(distance)
+            y_values.append(np.average(np.array(run_parallel_tests(case))))
+        # Save the results to a JSON file
         json_blob = {
-            "name": name,
-            "delta_times": totalDeltaTimes,
-            "average_items_per_hour": average_items_per_hour
+            "distances": x_values,
+            "average_delta_times": y_values
         }
-        with open(f"{name.replace(' ', '_').lower()}.json", 'w') as f:
+        with open("distance_test_results_1lift.json", 'w') as f:
             json.dump(json_blob, f, indent=4)
-        # Create histogram
-        plt.hist(totalDeltaTimes, bins=60, alpha=0.7, color='blue', edgecolor='black')
-        # Add title and labels
-        plt.title(f"Histogram of Delta Times for {name}")
-        plt.xlabel("Delta Time (seconds)")
-        plt.ylabel("Frequency")
-        # plot to file
-        plt.savefig(f"{name.replace(' ', '_').replace(',', '').lower()}.png")
-        plt.close()  # Close the current figure
+        # Create a plot
+        plt.plot(x_values, y_values, marker='o')
+        plt.title("Average Delta Times vs Distance Between VLMS")
+        plt.xlabel("Distance Between VLMS (meters)")
+        plt.ylabel("Average Delta Time (seconds)")
+        plt.grid(True)
+        plt.savefig("distance_test_results_1lift.png")
+        plt.close()
 
-
+#runNormalTestCases()
+runDistanceTestCases()
