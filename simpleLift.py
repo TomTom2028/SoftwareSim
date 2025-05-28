@@ -1,6 +1,7 @@
 # simple shit: one floor that spawns items. the vlm takes the tray down, and takes one of the tray
 import random
 import time
+import numpy as np
 
 import salabim as sim
 
@@ -45,6 +46,7 @@ class Arbiter:
     # NOTE: it is not really important in what order the VLMS themself process the sets
     # TODO: make this somewhat smart
     def schedule(self, order_items: dict[str, int]):
+        np.random.shuffle(self.vlms)
         item_orders_per_vlm = [{} for _ in self.vlms]
         vlm_corrected_items_count = [vlm.get_corrected_items_count() for vlm in self.vlms]
         for item in order_items:
