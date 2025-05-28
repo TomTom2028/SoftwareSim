@@ -115,3 +115,10 @@ hoeveel van het item nodig zijn.
 
 We willen ook nog proberen om te kijken wanneer plateaut de verbetering? (aantal vlms. duplciaten van dezelfde vlms!)
 arbiter: order van vlms randomizen
+
+We kunnen met pickdata per picker successvol de picktijden achterhalen per item, maar er is vaak te weinig data.
+Oplossing: we gebruiken een verdeling van alle items hun picktijd.
+
+combinatie testen; 1 vlm 1 lift, 2 vlm 2 lift
+
+A method for when determning to stop generating new data

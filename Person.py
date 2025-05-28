@@ -1,6 +1,18 @@
 import salabim as sim
 from Other import *
 from GraphicsSettings import *
+from scipy.stats import gamma
+
+params = [4.01283883e+00, 1.95463652e-01, 1.97284507e+04]
+# Extract shape (alpha) and calculate scale (1/beta)
+alpha = params[0]        # Shape parameter
+beta = params[1]         # Rate parameter
+scale = 1 / beta         # Scale parameter (conversion from rate)
+
+def gen_sample():
+    return gamma.rvs(a=alpha, scale=scale, size=1)[0]
+print(gen_sample())
+
 
 class Person(sim.Component):
     def __init__(self, person_name, timelog_array, env: sim.Environment, start_location, start_gui_location):
@@ -40,13 +52,14 @@ class Person(sim.Component):
             self.wait((goto_vlm.bay_status, BayStatus.READY))
             self.timelog_array.append(self.env.now())
             for item_name, amount in current_notification.to_pick_items.items():
-                self.hold(self.get_picktime())
-                #goto_vlm.docked_tray.remove_item(item_name, amount)
+                for i in range(amount):
+                   self.hold(self.get_picktime())
             goto_vlm.bay_status.set(BayStatus.IDLE)
             self.update_rect()
 
     def get_picktime(self):
-        return sim.Normal(10.81, 0.96).sample()
+        return gen_sample()
+        #return sim.Normal(10.81, 0.96).sample()
 
     def schedule_notification(self, notification):
         notification.enter(self.notification_queue)
