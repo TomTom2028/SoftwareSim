@@ -266,14 +266,14 @@ def create_case_two_vlms_onehalf_lift():
 
 def create_distance_between_vlms_test_case(distance, one_lift: bool):
     return TestCase([
-                VlmTestSetting(one_lift, 2, 9, "VLM_1"),
-                VlmTestSetting(one_lift, 2 + distance, 9, "VLM_2")],
+                VlmTestSetting(one_lift, 4, 9, "VLM_1"),
+                VlmTestSetting(one_lift, 4 + distance, 9, "VLM_2")],
             f"Two VLMS, {'One' if one_lift else 'Two'} Lifts, Distance {distance}")
 
 
 
 def create_amount_vlms_test_cases(amount_vlms: int, one_lift: bool):
-    return TestCase([VlmTestSetting(one_lift, i * 2, 9, f"VLM_{i}") for i in range(amount_vlms)],
+    return TestCase([VlmTestSetting(one_lift, i * 4 + 4, 9, f"VLM_{i}") for i in range(amount_vlms)],
                     f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts")
 
 
@@ -284,7 +284,7 @@ def calculate_s(timing_values: list[float]):
     return s
 
 
-def run_parallel_tests(testcase: TestCase, d_value = 0.05):
+def run_parallel_tests(testcase: TestCase, d_value = 0.1):
     total_delta_times = []
     average_delta_times = []
     max_workers = 8
