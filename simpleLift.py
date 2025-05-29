@@ -284,7 +284,7 @@ def calculate_s(timing_values: list[float]):
     return s
 
 
-def run_parallel_tests(testcase: TestCase, d_value = 0.5):
+def run_parallel_tests(testcase: TestCase, d_value = 0.05):
     total_delta_times = []
     average_delta_times = []
     max_workers = 8
