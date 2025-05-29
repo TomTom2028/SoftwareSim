@@ -1,6 +1,8 @@
 # simple shit: one floor that spawns items. the vlm takes the tray down, and takes one of the tray
+import numbers
 import random
 import time
+from math import floor
 from multiprocessing import freeze_support
 
 import salabim as sim
@@ -16,7 +18,7 @@ from Other import VlmItemOrder
 from Person import *
 
 class OrderQueuer(sim.Component):
-    def __init__(self, vlms, avg_amount_of_items, arbiter, orders):
+    def __init__(self, vlms, avg_amount_of_items, arbiter, orders, do_print=False):
         super().__init__()
         self.vlms = vlms
         self.avg_amount_of_items = avg_amount_of_items
@@ -26,12 +28,14 @@ class OrderQueuer(sim.Component):
     def process(self):
         while True:
             # take a random vlm
-            print("VLM CONTENTS")
-            for vlm in self.vlms:
-                print(vlm.get_corrected_items_count())
+            if self.do_print:
+                print("VLM CONTENTS")
+                for vlm in self.vlms:
+                    print(vlm.get_corrected_items_count())
            # take the first order
             current_order = self.orders.pop(0)
-            print("ORDER", current_order)
+            if self.do_print:
+                print("ORDER", current_order)
             self.arbiter.schedule(current_order)
             self.hold(sim.Uniform(1, 2).sample())
             if (len(self.orders) == 0):
@@ -40,14 +44,16 @@ class OrderQueuer(sim.Component):
 
 
 class Arbiter:
-    def __init__(self, vlms, bad_item_dict: dict[str, int]):
+    def __init__(self, vlms, bad_item_dict: dict[str, int], do_print=False):
         self.vlms = vlms
         self.bad_item_dict = bad_item_dict
+        self.do_print = do_print
     # NOTE: it is not really important in what order the VLMS themself process the sets
     # TODO: make this somewhat smart
     def schedule(self, order_items: dict[str, int]):
-        item_orders_per_vlm = [{} for _ in self.vlms]
-        vlm_corrected_items_count = [vlm.get_corrected_items_count() for vlm in self.vlms]
+        random_vlms = random.sample(self.vlms, len(self.vlms))
+        item_orders_per_vlm = [{} for _ in random_vlms]
+        vlm_corrected_items_count = [vlm.get_corrected_items_count() for vlm in random_vlms]
         for item in order_items:
             needed_amount = order_items[item]
             for idx, item_count in enumerate(vlm_corrected_items_count):
@@ -60,7 +66,8 @@ class Arbiter:
                     needed_amount -= to_take
                     item_orders_per_vlm[idx][item] = to_take
             if needed_amount != 0:
-                print(item, needed_amount)
+                if self.do_print:
+                    print(item, needed_amount)
                 if item not in self.bad_item_dict:
                     self.bad_item_dict[item] = needed_amount
                 else:
@@ -69,7 +76,7 @@ class Arbiter:
 
         # push the items trough to the vlm
         for idx, item_order in enumerate(item_orders_per_vlm):
-            self.vlms[idx].schedule(VlmItemOrder(item_order))
+            random_vlms[idx].schedule(VlmItemOrder(item_order))
 
 
 
@@ -165,14 +172,20 @@ def old_main():
     # Show plot
     plt.show()
 
+class VlmTestSetting:
+    def __init__(self,one_lift_mode: bool, location, amount_of_levels: int, name: str):
+        self.one_lift_mode = one_lift_mode
+        self.location = location
+        self.amount_of_levels = amount_of_levels
+        self.name = name
+    def __str__(self):
+        return f"VlmTestSetting(one_lift_mode={self.one_lift_mode}, location={self.location}, amount_of_levels={self.amount_of_levels}, name={self.name})"
 
 
 
-
-
-def run_test(has_two_vlms, one_lift_mode, distance_between_vlms=4):
+def run_test(settings: [VlmTestSetting], do_print=False):
     order_generator = OrderGenerator()
-    orders = order_generator.generate_pre_orders(500)
+    orders = order_generator.generate_pre_orders(250 * len(settings))
     combined_items = {}
     for order in orders:
         for item in order:
@@ -184,50 +197,32 @@ def run_test(has_two_vlms, one_lift_mode, distance_between_vlms=4):
     list_for_logging = []
     person = Person("Person1", list_for_logging, env, 4, 20)
     tower_generator = TowerGenerator()
-    tower_one = tower_generator.get_tower(9, 2, "VlmOne", 20)
-    tower_two = None
-    vlm_two = None
-    if has_two_vlms:
-        tower_two = tower_generator.get_tower(9, 2, "VlmTwo", 40)
-    vlm_one = DoubleLift(4.8, person, 4, 20, tower_one, "VlmOne", one_lift_mode=one_lift_mode)
-    if has_two_vlms:
-        vlm_two = DoubleLift(4.8, person, 4 +distance_between_vlms, 40, tower_two, "VlmTwo", one_lift_mode=one_lift_mode)
-    if has_two_vlms:
-        vlm_filler([
-            vlm_one,
-            vlm_two
-        ])
-    else:
-        vlm_filler([vlm_one])
+    vlms = []
+    for current_setting in settings:
+        current_tower = tower_generator.get_tower(current_setting.amount_of_levels, 2, current_setting.name, current_setting.location * 10)
+        vlm = DoubleLift(4.8, person, current_setting.location, current_setting.location * 10, current_tower, current_setting.name, one_lift_mode=current_setting.one_lift_mode)
+        vlms.append(vlm)
 
-    # print the items in the system
-    print("ITEMS IN SYSTEM")
-    print(vlm_one.get_corrected_items_count())
-    if has_two_vlms:
-        print(vlm_two.get_corrected_items_count())
+    vlm_filler(vlms)
+    if do_print:
+        # print the items in the system
+        print("ITEMS IN SYSTEM")
+        for vlm in vlms:
+            print(vlm.get_corrected_items_count())
+
+
     bad_item_dict = {}
     arbiter = None
-    if has_two_vlms:
-        arbiter = Arbiter([vlm_one, vlm_two], bad_item_dict)
-    else:
-        arbiter = Arbiter([vlm_one], bad_item_dict)
-    if has_two_vlms:
-        order_queuer = OrderQueuer([vlm_one, vlm_two], 2, arbiter, orders)
-    else:
-        order_queuer = OrderQueuer([vlm_one], 2, arbiter, orders)
+    arbiter = Arbiter(vlms, bad_item_dict)
+    order_queuer = OrderQueuer(vlms, 2, arbiter, orders, do_print)
     env.run(till=1000000)
-    if has_two_vlms:
-        print(f"Length of order queues: {len(vlm_one.order_queue)} {len(vlm_two.order_queue)}")
-    else:
-        print(f"Length of order queues: {len(vlm_one.order_queue)}")
-    for order in vlm_one.order_queue:
-        print(f"VlmOne: {order.order_items}")
-    if has_two_vlms:
-        for order in vlm_two.order_queue:
-            print(f"VlmTwo: {order.order_items}")
+    if do_print:
+        for vlm in vlms:
+            print(f"VLM {vlm.name} order queue length: {len(vlm.order_queue)}")
+            print(f"VLM {vlm.name} order queue items: {[order.order_items for order in vlm.order_queue]}")
 
-    print("Total amount of items not in the system: ")
-    print(bad_item_dict)
+        print("Total amount of items not in the system: ")
+        print(bad_item_dict)
     delta_times = []
     for i in range(1, len(list_for_logging)):
         delta_times.append(list_for_logging[i] - list_for_logging[i - 1])
@@ -241,39 +236,101 @@ TWO_VLMS_ONE_LIFT = (True, True, "Two VLMS, One Lift")
 TWO_VLMS_TWO_LIFTS = (True, False, "Two VLMS, Two Lifts")
 
 class TestCase:
-    def __init__(self, has_two_vlms, one_lift_mode, name, distance_between_vlms=4.0):
-        self.has_two_vlms = has_two_vlms
-        self.one_lift_mode = one_lift_mode
-        self.distance_between_vlms = distance_between_vlms
+    def __init__(self, settings: list[VlmTestSetting], name):
+        self.settings = settings
         self.name = name
 
-all_testcass = [
-    TestCase(*ONE_VLM_ONE_LIFT),
-    TestCase(*ONE_VLM_TWO_LIFTS),
-    TestCase(*TWO_VLMS_ONE_LIFT),
-]
+    def to_filename(self):
+        return self.name.replace(' ', '_').replace(',', '').lower()
+
+
+def create_case_one_vlm_one_lift():
+    return TestCase([VlmTestSetting(True, 2, 9, "VLM_1")], "One VLM, One Lift")
+
+def create_case_one_vlm_two_lifts():
+    return TestCase([VlmTestSetting(False, 2, 9, "VLM_1")], "One VLM, Two Lifts")
+
+def create_case_two_vlms_one_lift():
+    return TestCase([VlmTestSetting(True, 2, 9, "VLM_1"),
+                     VlmTestSetting(True, 4, 9, "VLM_2")], "Two VLMS, One Lift")
+
+def create_case_two_vlms_two_lifts():
+    return TestCase([VlmTestSetting(False, 2, 9, "VLM_1"),
+                     VlmTestSetting(False, 4, 9, "VLM_2")], "Two VLMS, Two Lifts")
+
+def create_case_two_vlms_onehalf_lift():
+    return TestCase([VlmTestSetting(True, 2, 9, "VLM_1"),
+                     VlmTestSetting(False, 4, 9, "VLM_2")], "Two VLMS, One and a Half Lift")
+
+
+def create_distance_between_vlms_test_case(distance, one_lift: bool):
+    return TestCase([
+                VlmTestSetting(one_lift, 2, 9, "VLM_1"),
+                VlmTestSetting(one_lift, 2 + distance, 9, "VLM_2")],
+            f"Two VLMS, {'One' if one_lift else 'Two'} Lifts, Distance {distance}")
 
 
 
+def create_amount_vlms_test_cases(one_lift: bool):
+    test_cases = []
+    for amount in range(1, 20):
+        vlms = [VlmTestSetting(one_lift, i * 2, 9, f"VLM_{i}") for i in range(amount)]
+        test_cases.append(TestCase(vlms, f"{amount} VLMS, {'One' if one_lift else 'Two'} Lifts"))
+    return test_cases
 
-def run_parallel_tests(testcase: TestCase):
+
+def calculate_s(timing_values: list[float]):
+    average = sum(timing_values) / len(timing_values)
+    s_squared = sum((x - average) ** 2 for x in timing_values) / (len(timing_values) - 1)
+    s = s_squared ** 0.5
+    return s
+
+
+def run_parallel_tests(testcase: TestCase, d_value = 0.5):
     total_delta_times = []
-    two_vlms, one_lift_mode, description = testcase.has_two_vlms, testcase.one_lift_mode, testcase.name
-    distance_between_vlms = testcase.distance_between_vlms
-    with ProcessPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(run_test, two_vlms, one_lift_mode, distance_between_vlms) for _ in range(20)]
+    average_delta_times = []
+    max_workers = 8
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(run_test, testcase.settings, False) for _ in range(100)]
         for future in as_completed(futures):
-            total_delta_times += future.result()
+            new_delta_times = future.result()
+            total_delta_times += new_delta_times
+            average_delta_times.append(sum(new_delta_times) / len(new_delta_times) if len(new_delta_times) > 0 else 0)
+        print(f"Ran initial tests for {testcase.name}, got {len(total_delta_times)} delta times.")
+        while calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) >= d_value:
+            amount_of_extra_cases = min(max(floor(((calculate_s(average_delta_times)/ d_value) ** 2) - len(average_delta_times)), max_workers), 100)
+            print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) }")
+            print(f"Extra runs: {amount_of_extra_cases}")
+            futures = [executor.submit(run_test, testcase.settings, False) for _ in range(amount_of_extra_cases)]
+            for future in as_completed(futures):
+                new_delta_times = future.result()
+                total_delta_times += new_delta_times
+                average_delta_times.append(
+                    sum(new_delta_times) / len(new_delta_times) if len(new_delta_times) > 0 else 0)
+        print(f"Final s: {calculate_s(average_delta_times)} for {testcase.name}, with {len(average_delta_times)} runs.")
+
     total_delta_times.sort()
     return total_delta_times
 
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+
+def generate_normal_testcases():
+    return [
+        create_case_one_vlm_one_lift(),
+        create_case_one_vlm_two_lifts(),
+        create_case_two_vlms_one_lift(),
+        create_case_two_vlms_two_lifts(),
+        create_case_two_vlms_onehalf_lift()
+    ]
+
+
 def runNormalTestCases():
     if __name__ == '__main__':
         freeze_support()
-        for case in all_testcass:
+        all_testcases = generate_normal_testcases()
+        for case in all_testcases:
             name = case.name
             print(f"Running test case: {name}")
             totalDeltaTimes = run_parallel_tests(case)
@@ -288,13 +345,14 @@ def runNormalTestCases():
             else:
                 average_items_per_hour = None
                 print(f"No delta times recorded for {name}.")
+            print("")
             # json output
             json_blob = {
                 "name": name,
                 "delta_times": totalDeltaTimes,
                 "average_items_per_hour": average_items_per_hour
             }
-            with open(f"{name.replace(' ', '_').lower()}.json", 'w') as f:
+            with open(f"output_tests/{case.to_filename()}.json", 'w') as f:
                 json.dump(json_blob, f, indent=4)
             # Create histogram
             plt.hist(totalDeltaTimes, bins=60, alpha=0.7, color='blue', edgecolor='black')
@@ -303,20 +361,20 @@ def runNormalTestCases():
             plt.xlabel("Delta Time (seconds)")
             plt.ylabel("Frequency")
             # plot to file
-            plt.savefig(f"{name.replace(' ', '_').replace(',', '').lower()}.png")
+            plt.savefig(f"output_tests/{case.to_filename()}.png")
             plt.close()  # Close the current figure
 
 
 
 
-def runDistanceTestCases():
+def runDistanceTestCases(one_lift_mode: bool):
     if __name__ == '__main__':
         freeze_support()
         x_values = []
         y_values = []
+
         for distance in np.arange(2, 20, 0.5):
-            #case = TestCase(True, False, f"Two VLMS, Two Lifts, Distance {distance}", distance)
-            case = TestCase(True, True, f"Two VLMS, One Lift, Distance {distance}", distance)
+            case = create_distance_between_vlms_test_case(distance, one_lift_mode)
             print(f"Running test case: {case.name}")
             x_values.append(distance)
             y_values.append(np.average(np.array(run_parallel_tests(case))))
@@ -325,16 +383,18 @@ def runDistanceTestCases():
             "distances": x_values,
             "average_delta_times": y_values
         }
-        with open("distance_test_results_1lift.json", 'w') as f:
+        file_name_base = "distance_test_results_1lift" if one_lift_mode else "distance_test_results_2lifts"
+        with open(f"output_tests/{file_name_base}.json", 'w') as f:
             json.dump(json_blob, f, indent=4)
         # Create a plot
         plt.plot(x_values, y_values, marker='o')
-        plt.title("Average Delta Times vs Distance Between VLMS")
+        plt.title(f"Average Delta Times vs Distance Between VLMS ({'One lift' if one_lift_mode else 'Two lifts'})")
         plt.xlabel("Distance Between VLMS (meters)")
         plt.ylabel("Average Delta Time (seconds)")
         plt.grid(True)
-        plt.savefig("distance_test_results_1lift.png")
+        plt.savefig(f"output_tests/{file_name_base}.png")
         plt.close()
 
-#runNormalTestCases()
-runDistanceTestCases()
+runNormalTestCases()
+#runDistanceTestCases(True)
+#runDistanceTestCases(False)
