@@ -24,6 +24,7 @@ class OrderQueuer(sim.Component):
         self.avg_amount_of_items = avg_amount_of_items
         self.arbiter = arbiter
         self.orders = orders
+        self.do_print = do_print
 
     def process(self):
         while True:
