@@ -1,16 +1,15 @@
+import numpy as np
 import salabim as sim
 from Other import *
 from GraphicsSettings import *
 from scipy.stats import gamma
 
-params = [4.01283883e+00, 1.95463652e-01, 1.97284507e+04]
-# Extract shape (alpha) and calculate scale (1/beta)
-alpha = params[0]        # Shape parameter
-beta = params[1]         # Rate parameter
-scale = 1 / beta         # Scale parameter (conversion from rate)
+lambda_param = 1.67974217e-01
+def exp_transform(x):
+    return (-1/lambda_param) * np.log(x)
 
 def gen_sample():
-    return gamma.rvs(a=alpha, scale=scale, size=1)[0]
+    return exp_transform(np.random.random_sample())
 print(gen_sample())
 
 
@@ -51,9 +50,11 @@ class Person(sim.Component):
             self.update_rect()
             self.wait((goto_vlm.bay_status, BayStatus.READY))
             self.timelog_array.append(self.env.now())
-            for item_name, amount in current_notification.to_pick_items.items():
+            hold_time = 0
+            for _, amount in current_notification.to_pick_items.items():
                 for i in range(amount):
-                   self.hold(self.get_picktime())
+                   hold_time += self.get_picktime()
+            self.hold(hold_time)
             goto_vlm.bay_status.set(BayStatus.IDLE)
             self.update_rect()
 

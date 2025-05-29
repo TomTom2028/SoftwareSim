@@ -246,22 +246,22 @@ class TestCase:
 
 
 def create_case_one_vlm_one_lift():
-    return TestCase([VlmTestSetting(True, 2, 9, "VLM_1")], "One VLM, One Lift")
+    return TestCase([VlmTestSetting(True, 4, 9, "VLM_1")], "One VLM, One Lift")
 
 def create_case_one_vlm_two_lifts():
-    return TestCase([VlmTestSetting(False, 2, 9, "VLM_1")], "One VLM, Two Lifts")
+    return TestCase([VlmTestSetting(False, 4, 9, "VLM_1")], "One VLM, Two Lifts")
 
 def create_case_two_vlms_one_lift():
-    return TestCase([VlmTestSetting(True, 2, 9, "VLM_1"),
-                     VlmTestSetting(True, 4, 9, "VLM_2")], "Two VLMS, One Lift")
+    return TestCase([VlmTestSetting(True, 4, 9, "VLM_1"),
+                     VlmTestSetting(True, 8, 9, "VLM_2")], "Two VLMS, One Lift")
 
 def create_case_two_vlms_two_lifts():
-    return TestCase([VlmTestSetting(False, 2, 9, "VLM_1"),
-                     VlmTestSetting(False, 4, 9, "VLM_2")], "Two VLMS, Two Lifts")
+    return TestCase([VlmTestSetting(False, 4, 9, "VLM_1"),
+                     VlmTestSetting(False, 8, 9, "VLM_2")], "Two VLMS, Two Lifts")
 
 def create_case_two_vlms_onehalf_lift():
-    return TestCase([VlmTestSetting(True, 2, 9, "VLM_1"),
-                     VlmTestSetting(False, 4, 9, "VLM_2")], "Two VLMS, One and a Half Lift")
+    return TestCase([VlmTestSetting(True, 4, 9, "VLM_1"),
+                     VlmTestSetting(False, 8, 9, "VLM_2")], "Two VLMS, One and a Half Lift")
 
 
 def create_distance_between_vlms_test_case(distance, one_lift: bool):
@@ -272,12 +272,9 @@ def create_distance_between_vlms_test_case(distance, one_lift: bool):
 
 
 
-def create_amount_vlms_test_cases(one_lift: bool):
-    test_cases = []
-    for amount in range(1, 20):
-        vlms = [VlmTestSetting(one_lift, i * 2, 9, f"VLM_{i}") for i in range(amount)]
-        test_cases.append(TestCase(vlms, f"{amount} VLMS, {'One' if one_lift else 'Two'} Lifts"))
-    return test_cases
+def create_amount_vlms_test_cases(amount_vlms: int, one_lift: bool):
+    return TestCase([VlmTestSetting(one_lift, i * 2, 9, f"VLM_{i}") for i in range(amount_vlms)],
+                    f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts")
 
 
 def calculate_s(timing_values: list[float]):
@@ -329,7 +326,6 @@ def generate_normal_testcases():
 
 def runNormalTestCases():
     if __name__ == '__main__':
-        freeze_support()
         all_testcases = generate_normal_testcases()
         for case in all_testcases:
             name = case.name
@@ -370,7 +366,6 @@ def runNormalTestCases():
 
 def runDistanceTestCases(one_lift_mode: bool):
     if __name__ == '__main__':
-        freeze_support()
         x_values = []
         y_values = []
 
@@ -396,6 +391,38 @@ def runDistanceTestCases(one_lift_mode: bool):
         plt.savefig(f"output_tests/{file_name_base}.png")
         plt.close()
 
+def runAmountVlmTestCases(one_lift_mode: bool):
+    if __name__ == '__main__':
+        x_values = []
+        y_values = []
+
+        for amount_vlms in np.arange(1, 20):
+            case = create_amount_vlms_test_cases(amount_vlms, one_lift_mode)
+            print(f"Running test case: {case.name}")
+            x_values.append(amount_vlms)
+            y_values.append(np.average(np.array(run_parallel_tests(case))))
+        # Save the results to a JSON file
+        json_blob = {
+            "amount_vlms": x_values,
+            "average_delta_times": y_values
+        }
+        file_name_base = "amount_vlms_results_1lift" if one_lift_mode else "amount_vlms_results_2lifts"
+        with open(f"output_tests/{file_name_base}.json", 'w') as f:
+            json.dump(json_blob, f, indent=4)
+        # Create a plot
+        plt.plot(x_values, y_values, marker='o')
+        plt.title(f"Average Delta Times vs Amount VLMS ({'One lift' if one_lift_mode else 'Two lifts'})")
+        plt.xlabel("Amount of VLMS")
+        plt.ylabel("Average Delta Time (seconds)")
+        plt.grid(True)
+        plt.savefig(f"output_tests/{file_name_base}.png")
+        plt.close()
+
+
+if __name__ == '__main__':
+    freeze_support()
 runNormalTestCases()
-#runDistanceTestCases(True)
-#runDistanceTestCases(False)
+runDistanceTestCases(True)
+runDistanceTestCases(False)
+runNormalTestCases(True)
+runDistanceTestCases(False)
