@@ -1,8 +1,9 @@
 # simple shit: one floor that spawns items. the vlm takes the tray down, and takes one of the tray
 import random
+import time
+
 random.seed(time.time())
 import numbers
-import time
 from math import floor
 from multiprocessing import freeze_support
 
