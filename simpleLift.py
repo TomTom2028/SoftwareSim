@@ -1,13 +1,12 @@
 # simple shit: one floor that spawns items. the vlm takes the tray down, and takes one of the tray
-import numbers
 import random
+random.seed(time.time())
+import numbers
 import time
 from math import floor
 from multiprocessing import freeze_support
 
 import salabim as sim
-
-random.seed(time.time())
 
 
 from tower.OrderGenerator import OrderGenerator
