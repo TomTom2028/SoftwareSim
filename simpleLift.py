@@ -184,7 +184,8 @@ class VlmTestSetting:
 
 
 
-def run_test(settings: [VlmTestSetting], do_print=False):
+def run_test(settings: [VlmTestSetting], seed, do_print=False):
+    random.seed(seed)
     order_generator = OrderGenerator()
     orders = order_generator.generate_pre_orders(250 * len(settings))
     combined_items = {}
@@ -282,12 +283,12 @@ def calculate_s(timing_values: list[float]):
     return s
 
 
-def run_parallel_tests(testcase: TestCase, d_value = 0.1):
+def run_parallel_tests(testcase: TestCase, d_value = 0.05):
     total_delta_times = []
     average_delta_times = []
     max_workers = 8
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(run_test, testcase.settings, False) for _ in range(100)]
+    with ProcessPoolExecutor(max_workers=max_workers, max_tasks_per_child=1) as executor:
+        futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)),  False) for i in range(100)]
         for future in as_completed(futures):
             new_delta_times = future.result()
             if testcase.needs_raw_deltas:
@@ -298,7 +299,7 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.1):
             amount_of_extra_cases = min(max(floor(((calculate_s(average_delta_times)/ d_value) ** 2) - len(average_delta_times)), max_workers), 100)
             print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) }")
             print(f"Extra runs: {amount_of_extra_cases}")
-            futures = [executor.submit(run_test, testcase.settings, False) for _ in range(amount_of_extra_cases)]
+            futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)), False) for i in range(amount_of_extra_cases)]
             for future in as_completed(futures):
                 new_delta_times = future.result()
                 if testcase.needs_raw_deltas:
@@ -424,7 +425,7 @@ def runAmountVlmTestCases(one_lift_mode: bool):
 
 if __name__ == '__main__':
     freeze_support()
-runNormalTestCases()
+#runNormalTestCases()
 runDistanceTestCases(True)
 runDistanceTestCases(False)
 runAmountVlmTestCases(True)
