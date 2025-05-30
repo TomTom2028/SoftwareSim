@@ -424,8 +424,8 @@ def runAmountVlmTestCases(one_lift_mode: bool):
 
 if __name__ == '__main__':
     freeze_support()
-#runNormalTestCases()
-#runDistanceTestCases(True)
-#runDistanceTestCases(False)
+runNormalTestCases()
+runDistanceTestCases(True)
+runDistanceTestCases(False)
 runAmountVlmTestCases(True)
-#runAmountVlmTestCases(False)
+runAmountVlmTestCases(False)
