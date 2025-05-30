@@ -375,8 +375,8 @@ def runDistanceTestCases(one_lift_mode: bool):
         for distance in np.arange(2, 20, 0.5):
             case = create_distance_between_vlms_test_case(distance, one_lift_mode)
             print(f"Running test case: {case.name}")
-            x_values.append(distance)
-            y_values.append(np.average(np.array(run_parallel_tests(case))))
+            x_values.append(distance.item())
+            y_values.append(np.average(np.array(run_parallel_tests(case))).item())
         # Save the results to a JSON file
         json_blob = {
             "distances": x_values,
@@ -402,8 +402,8 @@ def runAmountVlmTestCases(one_lift_mode: bool):
         for amount_vlms in np.arange(1, 9):
             case = create_amount_vlms_test_cases(amount_vlms, one_lift_mode)
             print(f"Running test case: {case.name}")
-            x_values.append(amount_vlms)
-            y_values.append(np.average(np.array(run_parallel_tests(case))))
+            x_values.append(amount_vlms.item())
+            y_values.append(np.average(np.array(run_parallel_tests(case))).item())
         # Save the results to a JSON file
         json_blob = {
             "amount_vlms": x_values,
