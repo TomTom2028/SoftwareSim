@@ -216,7 +216,7 @@ def run_test(settings: [VlmTestSetting], do_print=False):
     arbiter = None
     arbiter = Arbiter(vlms, bad_item_dict)
     order_queuer = OrderQueuer(vlms, 2, arbiter, orders, do_print)
-    env.run(till=1000000)
+    env.run() # run untill all events are done!
     if do_print:
         for vlm in vlms:
             print(f"VLM {vlm.name} order queue length: {len(vlm.order_queue)}")
@@ -231,50 +231,48 @@ def run_test(settings: [VlmTestSetting], do_print=False):
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-ONE_VLM_ONE_LIFT = (False, True, "One VLM, One Lift")
-ONE_VLM_TWO_LIFTS = (False, False, "One VLM, Two Lifts")
-TWO_VLMS_ONE_LIFT = (True, True, "Two VLMS, One Lift")
-TWO_VLMS_TWO_LIFTS = (True, False, "Two VLMS, Two Lifts")
-
 class TestCase:
-    def __init__(self, settings: list[VlmTestSetting], name):
+    def __init__(self, settings: list[VlmTestSetting], name, needs_raw_deltas: bool):
         self.settings = settings
         self.name = name
+        self.needs_raw_deltas = needs_raw_deltas
 
     def to_filename(self):
         return self.name.replace(' ', '_').replace(',', '').lower()
 
+ALL_VLM_HEIGHTS = 7
+
 
 def create_case_one_vlm_one_lift():
-    return TestCase([VlmTestSetting(True, 4, 9, "VLM_1")], "One VLM, One Lift")
+    return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, One Lift", True)
 
 def create_case_one_vlm_two_lifts():
-    return TestCase([VlmTestSetting(False, 4, 9, "VLM_1")], "One VLM, Two Lifts")
+    return TestCase([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, Two Lifts", True)
 
 def create_case_two_vlms_one_lift():
-    return TestCase([VlmTestSetting(True, 4, 9, "VLM_1"),
-                     VlmTestSetting(True, 8, 9, "VLM_2")], "Two VLMS, One Lift")
+    return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1"),
+                     VlmTestSetting(True, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One Lift", True)
 
 def create_case_two_vlms_two_lifts():
-    return TestCase([VlmTestSetting(False, 4, 9, "VLM_1"),
-                     VlmTestSetting(False, 8, 9, "VLM_2")], "Two VLMS, Two Lifts")
+    return TestCase([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1"),
+                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, Two Lifts", True)
 
 def create_case_two_vlms_onehalf_lift():
-    return TestCase([VlmTestSetting(True, 4, 9, "VLM_1"),
-                     VlmTestSetting(False, 8, 9, "VLM_2")], "Two VLMS, One and a Half Lift")
+    return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1"),
+                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One and a Half Lift", True)
 
 
 def create_distance_between_vlms_test_case(distance, one_lift: bool):
     return TestCase([
-                VlmTestSetting(one_lift, 4, 9, "VLM_1"),
-                VlmTestSetting(one_lift, 4 + distance, 9, "VLM_2")],
-            f"Two VLMS, {'One' if one_lift else 'Two'} Lifts, Distance {distance}")
+                VlmTestSetting(one_lift, 4, ALL_VLM_HEIGHTS, "VLM_1"),
+                VlmTestSetting(one_lift, 4 + distance, ALL_VLM_HEIGHTS, "VLM_2")],
+            f"Two VLMS, {'One' if one_lift else 'Two'} Lifts, Distance {distance}", False)
 
 
 
 def create_amount_vlms_test_cases(amount_vlms: int, one_lift: bool):
-    return TestCase([VlmTestSetting(one_lift, i * 4 + 4, 9, f"VLM_{i}") for i in range(amount_vlms)],
-                    f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts")
+    return TestCase([VlmTestSetting(one_lift, i * 4 + 4, ALL_VLM_HEIGHTS, f"VLM_{i}") for i in range(amount_vlms)],
+                    f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts", False)
 
 
 def calculate_s(timing_values: list[float]):
@@ -292,7 +290,8 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.1):
         futures = [executor.submit(run_test, testcase.settings, False) for _ in range(100)]
         for future in as_completed(futures):
             new_delta_times = future.result()
-            total_delta_times += new_delta_times
+            if testcase.needs_raw_deltas:
+                total_delta_times += new_delta_times
             average_delta_times.append(sum(new_delta_times) / len(new_delta_times) if len(new_delta_times) > 0 else 0)
         print(f"Ran initial tests for {testcase.name}, got {len(total_delta_times)} delta times.")
         while calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) >= d_value:
@@ -302,13 +301,17 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.1):
             futures = [executor.submit(run_test, testcase.settings, False) for _ in range(amount_of_extra_cases)]
             for future in as_completed(futures):
                 new_delta_times = future.result()
-                total_delta_times += new_delta_times
+                if testcase.needs_raw_deltas:
+                    total_delta_times += new_delta_times
                 average_delta_times.append(
                     sum(new_delta_times) / len(new_delta_times) if len(new_delta_times) > 0 else 0)
         print(f"Final s: {calculate_s(average_delta_times)} for {testcase.name}, with {len(average_delta_times)} runs.")
 
-    total_delta_times.sort()
-    return total_delta_times
+    if testcase.needs_raw_deltas:
+        total_delta_times.sort()
+        return total_delta_times
+    else:
+        return average_delta_times
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -372,8 +375,8 @@ def runDistanceTestCases(one_lift_mode: bool):
         for distance in np.arange(2, 20, 0.5):
             case = create_distance_between_vlms_test_case(distance, one_lift_mode)
             print(f"Running test case: {case.name}")
-            x_values.append(distance)
-            y_values.append(np.average(np.array(run_parallel_tests(case))))
+            x_values.append(distance.item())
+            y_values.append(np.average(np.array(run_parallel_tests(case))).item())
         # Save the results to a JSON file
         json_blob = {
             "distances": x_values,
@@ -396,11 +399,11 @@ def runAmountVlmTestCases(one_lift_mode: bool):
         x_values = []
         y_values = []
 
-        for amount_vlms in np.arange(1, 20):
+        for amount_vlms in np.arange(1, 9):
             case = create_amount_vlms_test_cases(amount_vlms, one_lift_mode)
             print(f"Running test case: {case.name}")
-            x_values.append(amount_vlms)
-            y_values.append(np.average(np.array(run_parallel_tests(case))))
+            x_values.append(amount_vlms.item())
+            y_values.append(np.average(np.array(run_parallel_tests(case))).item())
         # Save the results to a JSON file
         json_blob = {
             "amount_vlms": x_values,

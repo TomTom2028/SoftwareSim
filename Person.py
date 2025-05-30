@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import salabim as sim
 from Other import *
@@ -9,8 +11,8 @@ def exp_transform(x):
     return (-1/lambda_param) * np.log(x)
 
 def gen_sample():
-    return exp_transform(np.random.random_sample())
-print(gen_sample())
+    return exp_transform(random.random())
+#print(gen_sample())
 
 
 class Person(sim.Component):
