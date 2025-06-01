@@ -1,9 +1,9 @@
 # simple shit: one floor that spawns items. the vlm takes the tray down, and takes one of the tray
 import random
 import time
+from typing import Callable, List, Any
 
 random.seed(time.time())
-import numbers
 from math import floor
 from multiprocessing import freeze_support
 
@@ -225,55 +225,67 @@ def run_test(settings: [VlmTestSetting], seed, do_print=False):
 
         print("Total amount of items not in the system: ")
         print(bad_item_dict)
-    delta_times = []
-    for i in range(1, len(list_for_logging)):
-        delta_times.append(list_for_logging[i] - list_for_logging[i - 1])
-    return delta_times
+    return list_for_logging
+
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+
+
 class TestCase:
-    def __init__(self, settings: list[VlmTestSetting], name, needs_raw_deltas: bool):
+    def __init__(self, settings: list[VlmTestSetting], name, output_transformer: Callable[[List[float]], Any], eval_transformer: Callable[[List[float]], Any]):
         self.settings = settings
         self.name = name
-        self.needs_raw_deltas = needs_raw_deltas
-
+        self.output_transfomer = output_transformer
+        self.eval_transformer = eval_transformer
     def to_filename(self):
         return self.name.replace(' ', '_').replace(',', '').lower()
+
+def to_deltas(timing_values: List[float]):
+    deltas = []
+    for i in range(1, len(timing_values)):
+        deltas.append(timing_values[i] - timing_values[i - 1])
+    return deltas
+
+
+def averager_transformer(timing_values: List[float]):
+    deltas = to_deltas(timing_values)
+    return sum(deltas) / len(deltas)
 
 ALL_VLM_HEIGHTS = 7
 
 
+
 def create_case_one_vlm_one_lift():
-    return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, One Lift", True)
+    return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, One Lift", to_deltas, averager_transformer)
 
 def create_case_one_vlm_two_lifts():
-    return TestCase([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, Two Lifts", True)
+    return TestCase([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, Two Lifts", to_deltas, averager_transformer)
 
 def create_case_two_vlms_one_lift():
     return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1"),
-                     VlmTestSetting(True, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One Lift", True)
+                     VlmTestSetting(True, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One Lift", to_deltas, averager_transformer)
 
 def create_case_two_vlms_two_lifts():
     return TestCase([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1"),
-                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, Two Lifts", True)
+                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, Two Lifts", to_deltas, averager_transformer)
 
 def create_case_two_vlms_onehalf_lift():
     return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1"),
-                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One and a Half Lift", True)
+                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One and a Half Lift", to_deltas, averager_transformer)
 
 
 def create_distance_between_vlms_test_case(distance, one_lift: bool):
     return TestCase([
                 VlmTestSetting(one_lift, 4, ALL_VLM_HEIGHTS, "VLM_1"),
                 VlmTestSetting(one_lift, 4 + distance, ALL_VLM_HEIGHTS, "VLM_2")],
-            f"Two VLMS, {'One' if one_lift else 'Two'} Lifts, Distance {distance}", False)
+            f"Two VLMS, {'One' if one_lift else 'Two'} Lifts, Distance {distance}", averager_transformer, averager_transformer)
 
 
 
 def create_amount_vlms_test_cases(amount_vlms: int, one_lift: bool):
     return TestCase([VlmTestSetting(one_lift, i * 4 + 4, ALL_VLM_HEIGHTS, f"VLM_{i}") for i in range(amount_vlms)],
-                    f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts", False)
+                    f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts", averager_transformer, averager_transformer)
 
 
 def calculate_s(timing_values: list[float]):
@@ -284,36 +296,27 @@ def calculate_s(timing_values: list[float]):
 
 
 def run_parallel_tests(testcase: TestCase, d_value = 0.1):
-    total_delta_times = []
-    average_delta_times = []
+    eval_list = []
+    output_list = []
     max_workers = 8
     with ProcessPoolExecutor(max_workers=max_workers, max_tasks_per_child=1) as executor:
         futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)),  False) for i in range(100)]
         for future in as_completed(futures):
-            new_delta_times = future.result()
-            if testcase.needs_raw_deltas:
-                total_delta_times += new_delta_times
-            if len(new_delta_times) > 0:
-                average_delta_times.append(sum(new_delta_times) / len(new_delta_times))
-        print(f"Ran initial tests for {testcase.name}, got {len(total_delta_times)} delta times.")
-        while calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) >= d_value:
-            amount_of_extra_cases = min(max(floor(((calculate_s(average_delta_times)/ d_value) ** 2) - len(average_delta_times)), max_workers), 100)
-            print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) }\n s_val: {calculate_s(average_delta_times)}, amount_done_it: {len(average_delta_times)}")
+            new_times = future.result()
+            output_list.append(testcase.output_transfomer(new_times))
+            eval_list.append(testcase.eval_transformer(new_times))
+        print(f"Ran initial tests for {testcase.name}, got {len(eval_list)} delta times.")
+        while calculate_s(eval_list) / (len(eval_list) ** 0.5) >= d_value:
+            amount_of_extra_cases = min(max(floor(((calculate_s(eval_list)/ d_value) ** 2) - len(eval_list)), max_workers), 100)
+            print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(eval_list) / (len(eval_list) ** 0.5) }")
             print(f"Extra runs: {amount_of_extra_cases}")
-            futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)), False) for i in range(amount_of_extra_cases)]
+            futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)), False, not testcase.needs_raw_timing_values) for i in range(amount_of_extra_cases)]
             for future in as_completed(futures):
-                new_delta_times = future.result()
-                if testcase.needs_raw_deltas:
-                    total_delta_times += new_delta_times
-                if len(new_delta_times) > 0:
-                    average_delta_times.append(sum(new_delta_times) / len(new_delta_times))
-        print(f"Final s: {calculate_s(average_delta_times)} for {testcase.name}, with {len(average_delta_times)} runs.")
-
-    if testcase.needs_raw_deltas:
-        total_delta_times.sort()
-        return total_delta_times
-    else:
-        return average_delta_times
+                new_times = future.result()
+                output_list.append(testcase.output_transfomer(new_times))
+                eval_list.append(testcase.eval_transformer(new_times))
+        print(f"Final s: {calculate_s(eval_list)} for {testcase.name}, with {len(eval_list)} runs.")
+    return output_list
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -335,7 +338,7 @@ def runNormalTestCases():
         for case in all_testcases:
             name = case.name
             print(f"Running test case: {name}")
-            totalDeltaTimes = run_parallel_tests(case)
+            totalDeltaTimes =  [item for sublist in run_parallel_tests(case) for item in sublist]
             print(f"Test case {name} completed with {len(totalDeltaTimes)} delta times.")
             # Print the average time per hour
             average_items_per_hour = None
@@ -434,8 +437,8 @@ def runAmountVlmTestCases(one_lift_mode: bool):
 
 if __name__ == '__main__':
     freeze_support()
-#runNormalTestCases()
-runDistanceTestCases(True)
-runAmountVlmTestCases(True)
-runDistanceTestCases(False)
-runAmountVlmTestCases(False)
+runNormalTestCases()
+#runDistanceTestCases(True)
+#runDistanceTestCases(False)
+#runAmountVlmTestCases(True)
+#runAmountVlmTestCases(False)
