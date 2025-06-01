@@ -283,7 +283,7 @@ def calculate_s(timing_values: list[float]):
     return s
 
 
-def run_parallel_tests(testcase: TestCase, d_value = 0.05):
+def run_parallel_tests(testcase: TestCase, d_value = 0.1):
     total_delta_times = []
     average_delta_times = []
     max_workers = 8
@@ -293,19 +293,20 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.05):
             new_delta_times = future.result()
             if testcase.needs_raw_deltas:
                 total_delta_times += new_delta_times
-            average_delta_times.append(sum(new_delta_times) / len(new_delta_times) if len(new_delta_times) > 0 else 0)
+            if len(new_delta_times) > 0:
+                average_delta_times.append(sum(new_delta_times) / len(new_delta_times))
         print(f"Ran initial tests for {testcase.name}, got {len(total_delta_times)} delta times.")
         while calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) >= d_value:
             amount_of_extra_cases = min(max(floor(((calculate_s(average_delta_times)/ d_value) ** 2) - len(average_delta_times)), max_workers), 100)
-            print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) }")
+            print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(average_delta_times) / (len(average_delta_times) ** 0.5) }\n s_val: {calculate_s(average_delta_times)}, amount_done_it: {len(average_delta_times)}")
             print(f"Extra runs: {amount_of_extra_cases}")
             futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)), False) for i in range(amount_of_extra_cases)]
             for future in as_completed(futures):
                 new_delta_times = future.result()
                 if testcase.needs_raw_deltas:
                     total_delta_times += new_delta_times
-                average_delta_times.append(
-                    sum(new_delta_times) / len(new_delta_times) if len(new_delta_times) > 0 else 0)
+                if len(new_delta_times) > 0:
+                    average_delta_times.append(sum(new_delta_times) / len(new_delta_times))
         print(f"Final s: {calculate_s(average_delta_times)} for {testcase.name}, with {len(average_delta_times)} runs.")
 
     if testcase.needs_raw_deltas:
@@ -371,23 +372,27 @@ def runNormalTestCases():
 def runDistanceTestCases(one_lift_mode: bool):
     if __name__ == '__main__':
         x_values = []
-        y_values = []
+        y_values_plot = []
+        y_values_json = []
 
         for distance in np.arange(2, 20, 0.5):
             case = create_distance_between_vlms_test_case(distance, one_lift_mode)
             print(f"Running test case: {case.name}")
             x_values.append(distance.item())
-            y_values.append(np.average(np.array(run_parallel_tests(case))).item())
+            y_computed = run_parallel_tests(case)
+            y_values_json.append(y_computed)
+            y_avg = np.average(np.array(y_computed)).item()
+            y_values_plot.append(y_avg)
         # Save the results to a JSON file
         json_blob = {
             "distances": x_values,
-            "average_delta_times": y_values
+            "average_delta_times": y_values_json
         }
         file_name_base = "distance_test_results_1lift" if one_lift_mode else "distance_test_results_2lifts"
         with open(f"output_tests/{file_name_base}.json", 'w') as f:
             json.dump(json_blob, f, indent=4)
         # Create a plot
-        plt.plot(x_values, y_values, marker='o')
+        plt.plot(x_values, y_values_plot, marker='o')
         plt.title(f"Average Delta Times vs Distance Between VLMS ({'One lift' if one_lift_mode else 'Two lifts'})")
         plt.xlabel("Distance Between VLMS (meters)")
         plt.ylabel("Average Delta Time (seconds)")
@@ -398,23 +403,27 @@ def runDistanceTestCases(one_lift_mode: bool):
 def runAmountVlmTestCases(one_lift_mode: bool):
     if __name__ == '__main__':
         x_values = []
-        y_values = []
+        y_values_plot = []
+        y_values_json = []
 
-        for amount_vlms in np.arange(1, 9):
+        for amount_vlms in np.arange(1, 3):
             case = create_amount_vlms_test_cases(amount_vlms, one_lift_mode)
             print(f"Running test case: {case.name}")
             x_values.append(amount_vlms.item())
-            y_values.append(np.average(np.array(run_parallel_tests(case))).item())
+            y_computed = run_parallel_tests(case)
+            y_values_json.append(y_computed)
+            y_avg = np.average(np.array(y_computed)).item()
+            y_values_plot.append(y_avg)
         # Save the results to a JSON file
         json_blob = {
             "amount_vlms": x_values,
-            "average_delta_times": y_values
+            "average_delta_times": y_values_json
         }
         file_name_base = "amount_vlms_results_1lift" if one_lift_mode else "amount_vlms_results_2lifts"
         with open(f"output_tests/{file_name_base}.json", 'w') as f:
             json.dump(json_blob, f, indent=4)
         # Create a plot
-        plt.plot(x_values, y_values, marker='o')
+        plt.plot(x_values, y_values_plot, marker='o')
         plt.title(f"Average Delta Times vs Amount VLMS ({'One lift' if one_lift_mode else 'Two lifts'})")
         plt.xlabel("Amount of VLMS")
         plt.ylabel("Average Delta Time (seconds)")
@@ -427,6 +436,6 @@ if __name__ == '__main__':
     freeze_support()
 #runNormalTestCases()
 runDistanceTestCases(True)
-runDistanceTestCases(False)
 runAmountVlmTestCases(True)
+runDistanceTestCases(False)
 runAmountVlmTestCases(False)
