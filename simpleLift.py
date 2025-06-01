@@ -310,7 +310,7 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.1):
             amount_of_extra_cases = min(max(floor(((calculate_s(eval_list)/ d_value) ** 2) - len(eval_list)), max_workers), 100)
             print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(eval_list) / (len(eval_list) ** 0.5) }")
             print(f"Extra runs: {amount_of_extra_cases}")
-            futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)), False, not testcase.needs_raw_timing_values) for i in range(amount_of_extra_cases)]
+            futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)),  False) for i in range(100)]
             for future in as_completed(futures):
                 new_times = future.result()
                 output_list.append(testcase.output_transfomer(new_times))
