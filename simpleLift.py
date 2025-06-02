@@ -1,10 +1,12 @@
 # simple shit: one floor that spawns items. the vlm takes the tray down, and takes one of the tray
 import random
 import time
+from collections import defaultdict
 from typing import Callable, List, Any
 
 random.seed(time.time())
 from math import floor
+import pandas as pd
 from multiprocessing import freeze_support
 
 import salabim as sim
@@ -288,6 +290,18 @@ def create_amount_vlms_test_cases(amount_vlms: int, one_lift: bool):
                     f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts", averager_transformer, averager_transformer)
 
 
+def create_delta_time_relation_case(one_lift: bool):
+    def delta_time_relation_output(timing_values: List[float]):
+        time_with_deltas = []
+        for i in range(1, len(timing_values)):
+            new_value = (timing_values[i], timing_values[i] - timing_values[i - 1])
+            time_with_deltas.append(new_value)
+        return time_with_deltas
+
+    return TestCase([VlmTestSetting(one_lift, 4, ALL_VLM_HEIGHTS, "VLM_1")],
+                    f"Delta times in relation to time, {'One' if one_lift else 'Two'} Lifts", delta_time_relation_output, averager_transformer)
+
+
 def calculate_s(timing_values: list[float]):
     average = sum(timing_values) / len(timing_values)
     s_squared = sum((x - average) ** 2 for x in timing_values) / (len(timing_values) - 1)
@@ -435,10 +449,55 @@ def runAmountVlmTestCases(one_lift_mode: bool):
         plt.close()
 
 
+def runDeltaTimeToTimeTestCases(one_lift_mode: bool):
+    if __name__ == '__main__':
+        x_values = []
+        y_values_plot = []
+        json_values = []
+
+        pandas_array = []
+
+        case  = create_delta_time_relation_case(one_lift_mode)
+        print(f"Running test case: {case.name}")
+        values = run_parallel_tests(case)
+        for per_run_values in values:
+            json_object = {'times': [], 'deltas': []}
+            for timing_pair in per_run_values:
+                pandas_array.append(timing_pair)
+                json_object['times'].append(timing_pair[0])
+                json_object['deltas'].append(timing_pair[1])
+            json_values.append(json_object)
+
+        binning_df = pd.DataFrame(pandas_array, columns=["timestamp" "delta"])
+        bin_size = 10
+        binning_df["bin"] = ((binning_df["timestamp"] // bin_size) * bin_size)
+
+        binned_data = binning_df.groupby("bin")["delta"].mean().reset_index()
+        for row in binned_data.to_dict(orient="records"):
+            x_values.append(row["bin"])
+            y_values_plot.append(row["delta"])
+
+
+        # Save the results to a JSON file
+        json_blob = {
+            "timing_values": json_values
+        }
+        file_name_base = "delta_totime_1lift" if one_lift_mode else "delta_totime_2lifts"
+        with open(f"output_tests/{file_name_base}.json", 'w') as f:
+            json.dump(json_blob, f, indent=4)
+        # Create a plot
+        plt.plot(x_values, y_values_plot, marker='o')
+        plt.title(f"Average Delta Times vs To time ({'One lift' if one_lift_mode else 'Two lifts'})")
+        plt.xlabel("Time (seconds)")
+        plt.ylabel("Average Delta Time (seconds)")
+        plt.grid(True)
+        plt.savefig(f"output_tests/{file_name_base}.png")
+        plt.close()
 if __name__ == '__main__':
     freeze_support()
 runNormalTestCases()
 #runDistanceTestCases(True)
 #runDistanceTestCases(False)
-runAmountVlmTestCases(True)
+#runAmountVlmTestCases(True)
 #runAmountVlmTestCases(False)
+runDeltaTimeToTimeTestCases(True)
