@@ -309,7 +309,7 @@ def calculate_s(timing_values: list[float]):
     return s
 
 
-def run_parallel_tests(testcase: TestCase, d_value = 0.1):
+def run_parallel_tests(testcase: TestCase, d_value = 0.05):
     eval_list = []
     output_list = []
     max_workers = 8
@@ -324,7 +324,7 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.1):
             amount_of_extra_cases = min(max(floor(((calculate_s(eval_list)/ d_value) ** 2) - len(eval_list)), max_workers), 100)
             print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(eval_list) / (len(eval_list) ** 0.5) }")
             print(f"Extra runs: {amount_of_extra_cases}")
-            futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)),  False) for i in range(100)]
+            futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)),  False) for i in range(amount_of_extra_cases)]
             for future in as_completed(futures):
                 new_times = future.result()
                 output_list.append(testcase.output_transfomer(new_times))
@@ -455,21 +455,30 @@ def runDeltaTimeToTimeTestCases(one_lift_mode: bool):
         y_values_plot = []
         json_values = []
 
-        pandas_array = []
+        pandas_obj = {
+            "timestamp": [],
+            "delta": []
+        }
 
         case  = create_delta_time_relation_case(one_lift_mode)
         print(f"Running test case: {case.name}")
         values = run_parallel_tests(case)
         for per_run_values in values:
             json_object = {'times': [], 'deltas': []}
+            new_times = []
+            new_deltas = []
             for timing_pair in per_run_values:
-                pandas_array.append(timing_pair)
-                json_object['times'].append(timing_pair[0])
-                json_object['deltas'].append(timing_pair[1])
+                new_times.append(timing_pair[0])
+                new_deltas.append(timing_pair[1])
+            json_object['times'] += new_times
+            json_object['deltas'] += new_deltas
+            percentage_times = ((np.array(new_times) / max(new_times)) * 100).tolist()
             json_values.append(json_object)
+            pandas_obj['timestamp'] += percentage_times
+            pandas_obj['delta'] += new_deltas
 
-        binning_df = pd.DataFrame(pandas_array, columns=["timestamp" "delta"])
-        bin_size = 10
+        binning_df = pd.DataFrame(pandas_obj)
+        bin_size = 1
         binning_df["bin"] = ((binning_df["timestamp"] // bin_size) * bin_size)
 
         binned_data = binning_df.groupby("bin")["delta"].mean().reset_index()
@@ -488,16 +497,17 @@ def runDeltaTimeToTimeTestCases(one_lift_mode: bool):
         # Create a plot
         plt.plot(x_values, y_values_plot, marker='o')
         plt.title(f"Average Delta Times vs To time ({'One lift' if one_lift_mode else 'Two lifts'})")
-        plt.xlabel("Time (seconds)")
+        plt.xlabel("Percentage of run")
         plt.ylabel("Average Delta Time (seconds)")
         plt.grid(True)
         plt.savefig(f"output_tests/{file_name_base}.png")
         plt.close()
 if __name__ == '__main__':
     freeze_support()
-runNormalTestCases()
+#runNormalTestCases()
 #runDistanceTestCases(True)
 #runDistanceTestCases(False)
 #runAmountVlmTestCases(True)
 #runAmountVlmTestCases(False)
 runDeltaTimeToTimeTestCases(True)
+runDeltaTimeToTimeTestCases(False)
