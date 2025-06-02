@@ -440,5 +440,5 @@ if __name__ == '__main__':
 runNormalTestCases()
 #runDistanceTestCases(True)
 #runDistanceTestCases(False)
-#runAmountVlmTestCases(True)
+runAmountVlmTestCases(True)
 #runAmountVlmTestCases(False)
