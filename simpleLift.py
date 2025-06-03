@@ -186,10 +186,10 @@ class VlmTestSetting:
 
 
 
-def run_test(settings: [VlmTestSetting], seed, do_print=False):
+def run_test(settings: [VlmTestSetting], amount_of_orders: int,  seed, do_print=False):
     random.seed(seed)
     order_generator = OrderGenerator()
-    orders = order_generator.generate_pre_orders(250 * len(settings))
+    orders = order_generator.generate_pre_orders(amount_of_orders)
     combined_items = {}
     for order in orders:
         for item in order:
@@ -235,11 +235,12 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 class TestCase:
-    def __init__(self, settings: list[VlmTestSetting], name, output_transformer: Callable[[List[float]], Any], eval_transformer: Callable[[List[float]], Any]):
+    def __init__(self, settings: list[VlmTestSetting], name, output_transformer: Callable[[List[float]], Any], eval_transformer: Callable[[List[float]], Any], amount_of_orders: int):
         self.settings = settings
         self.name = name
         self.output_transfomer = output_transformer
         self.eval_transformer = eval_transformer
+        self.amount_of_orders = amount_of_orders
     def to_filename(self):
         return self.name.replace(' ', '_').replace(',', '').lower()
 
@@ -256,41 +257,67 @@ def averager_transformer(timing_values: List[float]):
 
 ALL_VLM_HEIGHTS = 7
 
+class TestCaseBuilder:
+    def __init__(self, settings: List[VlmTestSetting], name: str):
+        self.settings = settings
+        self.name = name
+        self.output_transformer = to_deltas
+        self.eval_transformer = averager_transformer
+        self.amount_of_orders = 250 * len(self.settings)
+
+    def set_output_transformer(self, output_transformer: Callable[[List[float]], Any]):
+        self.output_transformer = output_transformer
+        return self
+
+    def set_eval_transformer(self, eval_transformer: Callable[[List[float]], Any]):
+        self.eval_transformer = eval_transformer
+        return self
+
+    def set_amount_of_orders(self, amount_of_orders: int):
+        self.amount_of_orders = amount_of_orders
+        return self
+
+    def to_test_case(self):
+        return TestCase(self.settings, self.name, self.output_transformer, self.eval_transformer, self.amount_of_orders)
+
+
+
+
 
 
 def create_case_one_vlm_one_lift():
-    return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, One Lift", to_deltas, averager_transformer)
+    return TestCaseBuilder([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, One Lift").to_test_case()
 
 def create_case_one_vlm_two_lifts():
-    return TestCase([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, Two Lifts", to_deltas, averager_transformer)
+    return TestCaseBuilder([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1")], "One VLM, Two Lifts").to_test_case()
 
 def create_case_two_vlms_one_lift():
-    return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1"),
-                     VlmTestSetting(True, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One Lift", to_deltas, averager_transformer)
+    return TestCaseBuilder([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1"),
+                     VlmTestSetting(True, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One Lift").to_test_case()
 
 def create_case_two_vlms_two_lifts():
-    return TestCase([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1"),
-                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, Two Lifts", to_deltas, averager_transformer)
+    return TestCaseBuilder([VlmTestSetting(False, 4, ALL_VLM_HEIGHTS, "VLM_1"),
+                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, Two Lifts").to_test_case()
 
 def create_case_two_vlms_onehalf_lift():
-    return TestCase([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1"),
-                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One and a Half Lift", to_deltas, averager_transformer)
+    return TestCaseBuilder([VlmTestSetting(True, 4, ALL_VLM_HEIGHTS, "VLM_1"),
+                     VlmTestSetting(False, 8, ALL_VLM_HEIGHTS, "VLM_2")], "Two VLMS, One and a Half Lift").to_test_case()
 
 
 def create_distance_between_vlms_test_case(distance, one_lift: bool):
-    return TestCase([
+    return TestCaseBuilder([
                 VlmTestSetting(one_lift, 4, ALL_VLM_HEIGHTS, "VLM_1"),
                 VlmTestSetting(one_lift, 4 + distance, ALL_VLM_HEIGHTS, "VLM_2")],
-            f"Two VLMS, {'One' if one_lift else 'Two'} Lifts, Distance {distance}", averager_transformer, averager_transformer)
+            f"Two VLMS, {'One' if one_lift else 'Two'} Lifts, Distance {distance}").set_output_transformer(averager_transformer).to_test_case()
 
 
 
 def create_amount_vlms_test_cases(amount_vlms: int, one_lift: bool):
-    return TestCase([VlmTestSetting(one_lift, i * 4 + 4, ALL_VLM_HEIGHTS, f"VLM_{i}") for i in range(amount_vlms)],
-                    f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts", averager_transformer, averager_transformer)
+    return TestCaseBuilder([VlmTestSetting(one_lift, i * 4 + 4, ALL_VLM_HEIGHTS, f"VLM_{i}") for i in range(amount_vlms)],
+                    f"{amount_vlms} VLMS, {'One' if one_lift else 'Two'} Lifts").set_output_transformer(averager_transformer).to_test_case()
 
 
-def create_delta_time_relation_case(one_lift: bool):
+def create_delta_time_relation_case(one_lift: bool, amount_of_orders: int):
     def delta_time_relation_output(timing_values: List[float]):
         time_with_deltas = []
         for i in range(1, len(timing_values)):
@@ -298,8 +325,9 @@ def create_delta_time_relation_case(one_lift: bool):
             time_with_deltas.append(new_value)
         return time_with_deltas
 
-    return TestCase([VlmTestSetting(one_lift, 4, ALL_VLM_HEIGHTS, "VLM_1")],
-                    f"Delta times in relation to time, {'One' if one_lift else 'Two'} Lifts", delta_time_relation_output, averager_transformer)
+    return (TestCaseBuilder([VlmTestSetting(one_lift, 4, ALL_VLM_HEIGHTS, "VLM_1")],
+                    f"Delta times in relation to time, {'One' if one_lift else 'Two'} Lifts, {amount_of_orders} Orders")
+            .set_output_transformer(delta_time_relation_output)).set_amount_of_orders(amount_of_orders).to_test_case()
 
 
 def calculate_s(timing_values: list[float]):
@@ -314,7 +342,7 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.05):
     output_list = []
     max_workers = 8
     with ProcessPoolExecutor(max_workers=max_workers, max_tasks_per_child=1) as executor:
-        futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)),  False) for i in range(100)]
+        futures = [executor.submit(run_test, testcase.settings, testcase.amount_of_orders, (time.time_ns() * (i +  1)),  False) for i in range(100)]
         for future in as_completed(futures):
             new_times = future.result()
             output_list.append(testcase.output_transfomer(new_times))
@@ -324,7 +352,7 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.05):
             amount_of_extra_cases = min(max(floor(((calculate_s(eval_list)/ d_value) ** 2) - len(eval_list)), max_workers), 100)
             print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(eval_list) / (len(eval_list) ** 0.5) }")
             print(f"Extra runs: {amount_of_extra_cases}")
-            futures = [executor.submit(run_test, testcase.settings, (time.time_ns() * (i +  1)),  False) for i in range(amount_of_extra_cases)]
+            futures = [executor.submit(run_test, testcase.settings, testcase.amount_of_orders, (time.time_ns() * (i +  1)),  False) for i in range(amount_of_extra_cases)]
             for future in as_completed(futures):
                 new_times = future.result()
                 output_list.append(testcase.output_transfomer(new_times))
@@ -449,7 +477,7 @@ def runAmountVlmTestCases(one_lift_mode: bool):
         plt.close()
 
 
-def runDeltaTimeToTimeTestCases(one_lift_mode: bool):
+def runDeltaTimeToTimeTestCases(one_lift_mode: bool, amount_of_orders: int):
     if __name__ == '__main__':
         x_values = []
         y_values_plot = []
@@ -491,12 +519,12 @@ def runDeltaTimeToTimeTestCases(one_lift_mode: bool):
         json_blob = {
             "timing_values": json_values
         }
-        file_name_base = "delta_totime_1lift" if one_lift_mode else "delta_totime_2lifts"
+        file_name_base = case.to_filename()
         with open(f"output_tests/{file_name_base}.json", 'w') as f:
             json.dump(json_blob, f, indent=4)
         # Create a plot
         plt.plot(x_values, y_values_plot, marker='o')
-        plt.title(f"Average Delta Times vs To time ({'One lift' if one_lift_mode else 'Two lifts'})")
+        plt.title(f"Average Delta Times vs To time ({'One lift' if one_lift_mode else 'Two lifts'}), ({amount_of_orders} Orders)")
         plt.xlabel("Percentage of run")
         plt.ylabel("Average Delta Time (seconds)")
         plt.grid(True)
@@ -509,5 +537,6 @@ if __name__ == '__main__':
 #runDistanceTestCases(False)
 #runAmountVlmTestCases(True)
 #runAmountVlmTestCases(False)
-runDeltaTimeToTimeTestCases(True)
-runDeltaTimeToTimeTestCases(False)
+#runDeltaTimeToTimeTestCases(True)
+runDeltaTimeToTimeTestCases(False, 250)
+runDeltaTimeToTimeTestCases(False, 2000)
