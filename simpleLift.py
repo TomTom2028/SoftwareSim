@@ -337,7 +337,7 @@ def calculate_s(timing_values: list[float]):
     return s
 
 
-def run_parallel_tests(testcase: TestCase, d_value = 0.05):
+def run_parallel_tests(testcase: TestCase, d_value = 0.1):
     eval_list = []
     output_list = []
     max_workers = 8
@@ -488,7 +488,7 @@ def runDeltaTimeToTimeTestCases(one_lift_mode: bool, amount_of_orders: int):
             "delta": []
         }
 
-        case  = create_delta_time_relation_case(one_lift_mode)
+        case  = create_delta_time_relation_case(one_lift_mode, amount_of_orders)
         print(f"Running test case: {case.name}")
         values = run_parallel_tests(case)
         for per_run_values in values:
@@ -506,7 +506,7 @@ def runDeltaTimeToTimeTestCases(one_lift_mode: bool, amount_of_orders: int):
             pandas_obj['delta'] += new_deltas
 
         binning_df = pd.DataFrame(pandas_obj)
-        bin_size = 1
+        bin_size = 5
         binning_df["bin"] = ((binning_df["timestamp"] // bin_size) * bin_size)
 
         binned_data = binning_df.groupby("bin")["delta"].mean().reset_index()
@@ -537,6 +537,9 @@ if __name__ == '__main__':
 #runDistanceTestCases(False)
 #runAmountVlmTestCases(True)
 #runAmountVlmTestCases(False)
-#runDeltaTimeToTimeTestCases(True)
-runDeltaTimeToTimeTestCases(False, 250)
-runDeltaTimeToTimeTestCases(False, 2000)
+#runDeltaTimeToTimeTestCases(False, 250)
+#runDeltaTimeToTimeTestCases(False, 2000)
+#runDeltaTimeToTimeTestCases(True, 250)
+#runDeltaTimeToTimeTestCases(True, 2000)
+#runDeltaTimeToTimeTestCases(True, 10000)
+runDeltaTimeToTimeTestCases(False, 10000)
