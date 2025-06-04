@@ -341,15 +341,16 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.1):
     eval_list = []
     output_list = []
     max_workers = 8
+    base_amount_of_runs = 5000
     with ProcessPoolExecutor(max_workers=max_workers, max_tasks_per_child=1) as executor:
-        futures = [executor.submit(run_test, testcase.settings, testcase.amount_of_orders, (time.time_ns() * (i +  1)),  False) for i in range(100)]
+        futures = [executor.submit(run_test, testcase.settings, testcase.amount_of_orders, (time.time_ns() * (i +  1)),  False) for i in range(base_amount_of_runs)]
         for future in as_completed(futures):
             new_times = future.result()
             output_list.append(testcase.output_transfomer(new_times))
             eval_list.append(testcase.eval_transformer(new_times))
         print(f"Ran initial tests for {testcase.name}, got {len(eval_list)} delta times.")
         while calculate_s(eval_list) / (len(eval_list) ** 0.5) >= d_value:
-            amount_of_extra_cases = min(max(floor(((calculate_s(eval_list)/ d_value) ** 2) - len(eval_list)), max_workers), 100)
+            amount_of_extra_cases = min(max(floor(((calculate_s(eval_list)/ d_value) ** 2) - len(eval_list)), max_workers), base_amount_of_runs)
             print(f"Running more tests for {testcase.name}, current d comparer: {calculate_s(eval_list) / (len(eval_list) ** 0.5) }")
             print(f"Extra runs: {amount_of_extra_cases}")
             futures = [executor.submit(run_test, testcase.settings, testcase.amount_of_orders, (time.time_ns() * (i +  1)),  False) for i in range(amount_of_extra_cases)]
@@ -538,8 +539,8 @@ if __name__ == '__main__':
 #runAmountVlmTestCases(True)
 #runAmountVlmTestCases(False)
 #runDeltaTimeToTimeTestCases(False, 250)
-#runDeltaTimeToTimeTestCases(False, 2000)
+runDeltaTimeToTimeTestCases(False, 2000)
 #runDeltaTimeToTimeTestCases(True, 250)
-#runDeltaTimeToTimeTestCases(True, 2000)
+runDeltaTimeToTimeTestCases(True, 2000)
 #runDeltaTimeToTimeTestCases(True, 10000)
-runDeltaTimeToTimeTestCases(False, 10000)
+#runDeltaTimeToTimeTestCases(False, 10000)
