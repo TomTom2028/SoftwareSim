@@ -51,11 +51,13 @@ class Person(sim.Component):
             self.update_rect()
             self.update_rect()
             self.wait((goto_vlm.bay_status, BayStatus.READY))
-            self.timelog_array.append(self.env.now())
             hold_time = 0
+            current_now = self.env.now()
             for _, amount in current_notification.to_pick_items.items():
                 for i in range(amount):
-                   hold_time += self.get_picktime()
+                    current_picktime = self.get_picktime()
+                    self.timelog_array.append(current_picktime + current_now)
+                    hold_time += current_picktime
             self.hold(hold_time)
             goto_vlm.bay_status.set(BayStatus.IDLE)
             self.update_rect()

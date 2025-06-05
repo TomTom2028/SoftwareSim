@@ -235,12 +235,13 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 class TestCase:
-    def __init__(self, settings: list[VlmTestSetting], name, output_transformer: Callable[[List[float]], Any], eval_transformer: Callable[[List[float]], Any], amount_of_orders: int):
+    def __init__(self, settings: list[VlmTestSetting], name, output_transformer: Callable[[List[float]], Any], eval_transformer: Callable[[List[float]], Any], amount_of_orders: int, base_amount_of_runs: int):
         self.settings = settings
         self.name = name
         self.output_transfomer = output_transformer
         self.eval_transformer = eval_transformer
         self.amount_of_orders = amount_of_orders
+        self.base_amount_of_runs = base_amount_of_runs
     def to_filename(self):
         return self.name.replace(' ', '_').replace(',', '').lower()
 
@@ -264,6 +265,7 @@ class TestCaseBuilder:
         self.output_transformer = to_deltas
         self.eval_transformer = averager_transformer
         self.amount_of_orders = 250 * len(self.settings)
+        self.base_amount_of_runs = 100
 
     def set_output_transformer(self, output_transformer: Callable[[List[float]], Any]):
         self.output_transformer = output_transformer
@@ -278,8 +280,11 @@ class TestCaseBuilder:
         return self
 
     def to_test_case(self):
-        return TestCase(self.settings, self.name, self.output_transformer, self.eval_transformer, self.amount_of_orders)
+        return TestCase(self.settings, self.name, self.output_transformer, self.eval_transformer, self.amount_of_orders, self.base_amount_of_runs)
 
+    def set_base_amount_of_runs(self, base_amount_of_runs: int):
+        self.base_amount_of_runs = base_amount_of_runs
+        return self
 
 
 
@@ -325,9 +330,11 @@ def create_delta_time_relation_case(one_lift: bool, amount_of_orders: int):
             time_with_deltas.append(new_value)
         return time_with_deltas
 
-    return (TestCaseBuilder([VlmTestSetting(one_lift, 4, ALL_VLM_HEIGHTS, "VLM_1")],
+    return ((TestCaseBuilder([VlmTestSetting(one_lift, 4, ALL_VLM_HEIGHTS, "VLM_1")],
                     f"Delta times in relation to time, {'One' if one_lift else 'Two'} Lifts, {amount_of_orders} Orders")
-            .set_output_transformer(delta_time_relation_output)).set_amount_of_orders(amount_of_orders).to_test_case()
+            .set_output_transformer(delta_time_relation_output)).set_amount_of_orders(amount_of_orders)
+            .set_base_amount_of_runs(5000)
+            .to_test_case())
 
 
 def calculate_s(timing_values: list[float]):
@@ -341,7 +348,7 @@ def run_parallel_tests(testcase: TestCase, d_value = 0.1):
     eval_list = []
     output_list = []
     max_workers = 8
-    base_amount_of_runs = 5000
+    base_amount_of_runs = testcase.base_amount_of_runs
     with ProcessPoolExecutor(max_workers=max_workers, max_tasks_per_child=1) as executor:
         futures = [executor.submit(run_test, testcase.settings, testcase.amount_of_orders, (time.time_ns() * (i +  1)),  False) for i in range(base_amount_of_runs)]
         for future in as_completed(futures):
@@ -533,15 +540,13 @@ def runDeltaTimeToTimeTestCases(one_lift_mode: bool, amount_of_orders: int):
         plt.close()
 if __name__ == '__main__':
     freeze_support()
-old_main()
-#runNormalTestCases()
-#runDistanceTestCases(True)
-#runDistanceTestCases(False)
-#runAmountVlmTestCases(True)
-#runAmountVlmTestCases(False)
-#runDeltaTimeToTimeTestCases(False, 250)
-#runDeltaTimeToTimeTestCases(False, 2000)
-#runDeltaTimeToTimeTestCases(True, 250)
-#runDeltaTimeToTimeTestCases(True, 2000)
-#runDeltaTimeToTimeTestCases(True, 10000)
-#runDeltaTimeToTimeTestCases(False, 10000)
+#old_main()
+runNormalTestCases()
+runDeltaTimeToTimeTestCases(False, 250)
+runDeltaTimeToTimeTestCases(False, 2000)
+runDeltaTimeToTimeTestCases(True, 250)
+runDeltaTimeToTimeTestCases(True, 2000)
+runDistanceTestCases(True)
+runDistanceTestCases(False)
+runAmountVlmTestCases(True)
+runAmountVlmTestCases(False)
