@@ -124,9 +124,9 @@ def old_main():
                  vlmTwo
                  ], 2, arbiter, orders)
 
-    # env.animate(True)
+    env.animate(True)
 
-    env.run(till=1000000)
+    env.run()
     print(f"Length of order queues: {len(vlmOne.order_queue)} {len(vlmTwo.order_queue)}")
     for order in vlmOne.order_queue:
         print(f"VlmOne: {order.order_items}")
@@ -533,14 +533,15 @@ def runDeltaTimeToTimeTestCases(one_lift_mode: bool, amount_of_orders: int):
         plt.close()
 if __name__ == '__main__':
     freeze_support()
+old_main()
 #runNormalTestCases()
 #runDistanceTestCases(True)
 #runDistanceTestCases(False)
 #runAmountVlmTestCases(True)
 #runAmountVlmTestCases(False)
 #runDeltaTimeToTimeTestCases(False, 250)
-runDeltaTimeToTimeTestCases(False, 2000)
+#runDeltaTimeToTimeTestCases(False, 2000)
 #runDeltaTimeToTimeTestCases(True, 250)
-runDeltaTimeToTimeTestCases(True, 2000)
+#runDeltaTimeToTimeTestCases(True, 2000)
 #runDeltaTimeToTimeTestCases(True, 10000)
 #runDeltaTimeToTimeTestCases(False, 10000)
