@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 import salabim as sim
+
 from Other import *
 from GraphicsSettings import *
 from scipy.stats import gamma
@@ -58,6 +59,7 @@ class Person(sim.Component):
                     current_picktime = self.get_picktime()
                     self.timelog_array.append(current_picktime + current_now)
                     hold_time += current_picktime
+                    current_now += current_picktime
             self.hold(hold_time)
             goto_vlm.bay_status.set(BayStatus.IDLE)
             self.update_rect()
