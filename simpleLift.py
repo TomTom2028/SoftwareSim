@@ -256,7 +256,7 @@ def averager_transformer(timing_values: List[float]):
     deltas = to_deltas(timing_values)
     return sum(deltas) / len(deltas)
 
-ALL_VLM_HEIGHTS = 7
+ALL_VLM_HEIGHTS = 19
 
 class TestCaseBuilder:
     def __init__(self, settings: List[VlmTestSetting], name: str):
