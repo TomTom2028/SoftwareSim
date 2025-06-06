@@ -388,6 +388,14 @@ def runNormalTestCases():
         for case in all_testcases:
             name = case.name
             print(f"Running test case: {name}")
+            totalDeltaTimes = []
+            totalAverages = []
+            for run_data in run_parallel_tests(case):
+                totalDeltaTimes += run_data
+                average_of_run = sum(run_data) / len(run_data)
+                totalAverages.append(average_of_run)
+
+
             totalDeltaTimes =  [item for sublist in run_parallel_tests(case) for item in sublist]
             print(f"Test case {name} completed with {len(totalDeltaTimes)} delta times.")
             # Print the average time per hour
@@ -405,6 +413,7 @@ def runNormalTestCases():
             json_blob = {
                 "name": name,
                 "delta_times": totalDeltaTimes,
+                "totalAverages": totalAverages,
                 "average_items_per_hour": average_items_per_hour
             }
             with open(f"output_tests/{case.to_filename()}.json", 'w') as f:
