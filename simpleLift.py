@@ -396,7 +396,6 @@ def runNormalTestCases():
                 totalAverages.append(average_of_run)
 
 
-            totalDeltaTimes =  [item for sublist in run_parallel_tests(case) for item in sublist]
             print(f"Test case {name} completed with {len(totalDeltaTimes)} delta times.")
             # Print the average time per hour
             average_items_per_hour = None
@@ -437,7 +436,7 @@ def runDistanceTestCases(one_lift_mode: bool):
         y_values_plot = []
         y_values_json = []
 
-        for distance in np.arange(2, 20, 0.5):
+        for distance in np.arange(2, 11, 1):
             case = create_distance_between_vlms_test_case(distance, one_lift_mode)
             print(f"Running test case: {case.name}")
             x_values.append(distance.item())
@@ -468,7 +467,7 @@ def runAmountVlmTestCases(one_lift_mode: bool):
         y_values_plot = []
         y_values_json = []
 
-        for amount_vlms in np.arange(1, 3):
+        for amount_vlms in np.arange(1, 9):
             case = create_amount_vlms_test_cases(amount_vlms, one_lift_mode)
             print(f"Running test case: {case.name}")
             x_values.append(amount_vlms.item())
@@ -550,11 +549,11 @@ def runDeltaTimeToTimeTestCases(one_lift_mode: bool, amount_of_orders: int):
 if __name__ == '__main__':
     freeze_support()
 #old_main()
-runNormalTestCases()
+#runNormalTestCases()
 #runDeltaTimeToTimeTestCases(False, 250)
-runDeltaTimeToTimeTestCases(False, 2000)
+#runDeltaTimeToTimeTestCases(False, 2000)
 #runDeltaTimeToTimeTestCases(True, 250)
-runDeltaTimeToTimeTestCases(True, 2000)
+#runDeltaTimeToTimeTestCases(True, 2000)
 runDistanceTestCases(True)
 runDistanceTestCases(False)
 runAmountVlmTestCases(True)
